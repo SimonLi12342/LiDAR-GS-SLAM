@@ -8,7 +8,7 @@
 
 <h3 align="center">ECCV 2026</h3>
 
-[Project_Page](https://lab-of-ai-and-robotics.github.io/GS-SLAM-Family/) | [arxiv]() | [Paper]() | [Video](https://youtu.be/NsbvDb8hZbA)
+[Project_Page](https://lab-of-ai-and-robotics.github.io/GS-SLAM-Family/) | [arxiv](https://arxiv.org/abs/2607.04127) | [Paper](https://link.springer.com/chapter/10.1007/978-3-032-37595-7_34) | [Video](https://youtu.be/NsbvDb8hZbA)
 
 </div>
 
