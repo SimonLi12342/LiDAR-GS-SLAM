@@ -561,7 +561,8 @@ class GaussianModel(nn.Module):
             return z, z, {"t_split": 1.0, "t_clone": 1.0, "num_split": 0, "num_clone": 0}
 
         cs = self._control_score_vector(n0)
-        valid = torch.isfinite(cs)
+        # Map-management convention: control_score == 0 is invalid/unset.
+        valid = torch.isfinite(cs) & (cs > 0.0)
         if int(valid.sum().item()) < 32:
             z = torch.zeros((n0,), dtype=torch.bool, device="cuda")
             return z, z, {"t_split": 1.0, "t_clone": 1.0, "num_split": 0, "num_clone": 0}
@@ -648,6 +649,7 @@ class GaussianModel(nn.Module):
 
             cs = self._control_score_vector(n)
             finite = torch.isfinite(cs)
+            # Exclude the zero invalid/unset sentinel from plane-score quantiles.
             positive = finite & (cs > 0.0)
             if int(positive.sum().item()) < 16:
                 return plane_prune_mask, stats
@@ -978,12 +980,11 @@ class GaussianModel(nn.Module):
         self.prune_points(prune_filter)
         return selected_count
 
-    def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size):
-        grads = self.xyz_gradient_accum / self.denom
-        grads[grads.isnan()] = 0.0
-
-        split_mask, clone_mask, score_stats = self._select_control_masks(extent)
-        self.densify_and_split_control(split_mask, N=2)
+    def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size, enable_split=True):
+        # Opacity pruning is the common baseline; score-based splitting is optional.
+        if enable_split:
+            split_mask, _, _ = self._select_control_masks(extent)
+            self.densify_and_split_control(split_mask, N=2)
 
         prune_mask = (self.get_opacity < min_opacity).squeeze()
 

@@ -68,6 +68,7 @@ class GS_ICP_SLAM(SLAMParameters):
         self.decay_speed = float(cfg.slam.decay_speed)
         self.use_densify = cfg.slam.use_densify
         self.densify_start_iteration = int(cfg.slam.densify_start_iteration)
+        self.use_plane_management = bool(cfg.slam.use_plane_management) if hasattr(cfg.slam, 'use_plane_management') else False
         self.rerun_viewer = args.rerun_viewer
         self.densify_frequency = args.densify_frequency if args.densify_frequency is not None else (cfg.slam.densify_frequency if hasattr(cfg.slam, 'densify_frequency') else 50)
         self.trackable_conf_th = float(cfg.slam.trackable_conf_th) if hasattr(cfg.slam, 'trackable_conf_th') else 0.0
@@ -244,6 +245,7 @@ if __name__ == "__main__":
 
     # densify related parameters
     parser.add_argument("--use_densify", default=None)
+    parser.add_argument("--use_plane_management", default=None)
     parser.add_argument("--densify_start_iteration", default=None)
     parser.add_argument("--densify_threshold_opacity", default=None)
     parser.add_argument("--densify_percentage", default=None)
@@ -288,6 +290,7 @@ if __name__ == "__main__":
     if args.decay_speed: cfg.slam.decay_speed = float(args.decay_speed)
     if args.loop_cooldown_time: cfg.slam.loop_cooldown_time = float(args.loop_cooldown_time)
     if args.use_densify: cfg.slam.use_densify = args.use_densify.lower() in ('true', '1', 'yes', 't')
+    if args.use_plane_management: cfg.slam.use_plane_management = args.use_plane_management.lower() in ('true', '1', 'yes', 't')
 
     gs_icp_slam = GS_ICP_SLAM(args, cfg)
     gs_icp_slam.run()

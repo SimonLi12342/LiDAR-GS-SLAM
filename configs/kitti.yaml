@@ -40,6 +40,7 @@ slam:
   densify_percentage: 0.40
   opt_scaling_max: 0.1
   use_densify: True
+  use_plane_management: False
   densify_start_iteration: 100
 
   # pruning related parameters
@@ -50,7 +51,7 @@ slam:
   opt_lambda_dist : 0.01
   decay_speed: 0.0125
   loop_overlap_th: 0.7
-  loop_constraint_noise: 1e-6
+  loop_constraint_noise: 1e-2
   loop_cooldown_time: 50.0
   downsample_voxel_size: 0.4
   

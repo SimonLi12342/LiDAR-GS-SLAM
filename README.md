@@ -125,6 +125,9 @@ Metrics are written only when the sequence finishes cleanly.
 
 ## Trajectory Evaluation
 
+Paper evaluation used EVO on exported tracking-keyframe trajectories.
+The runtime ATE helpers report translation RMSE after rigid SE(3) alignment without scale correction; the standard trajectory export contains all frames.
+
 The repository writes estimated trajectories for `evo`. Example:
 
 ```bash
@@ -181,9 +184,22 @@ Important SLAM parameters live under the `slam` section of each YAML config:
 - `loop_overlap_th`: loop closure acceptance threshold
 - `loop_constraint_noise`: PGO loop constraint noise
 - `loop_cooldown_time`: minimum frame gap before another loop attempt
-- `use_densify`: enables Gaussian densification
+- `use_densify`: enables control-score-based splitting; opacity pruning remains enabled
+- `use_plane_management`: enables plane cover-and-prune independently of splitting
 
 Loop closure is enabled by default. Current configs use `loop_overlap_th: 0.7`.
+
+### Table 4 map-management variants
+
+| Variant | `use_densify` | `use_plane_management` | Operations |
+|---|---|---|---|
+| Baseline | `False` | `False` | Opacity prune only |
+| Split | `True` | `False` | Opacity prune + split |
+| Plane Prune | `False` | `True` | Opacity prune + plane prune |
+| Full | `True` | `True` | Opacity prune + split + plane prune |
+
+Opacity pruning and optional splitting follow `densify_start_iteration` and `densify_frequency`. The final experimental plane-management setting starts at iteration 300 and runs every 300 iterations.
+Zero `control_score` values are treated as invalid/unset for score-driven map management and excluded from split/plane quantiles. G-ICP instead uses TCS computed from current target scales; its legacy setter name, `set_target_control_score`, is retained for API compatibility. Unlike the map-control sentinel, TCS = 0 is valid and receives the maximum geometry weight.
 
 ## Acknowledgements
 

@@ -921,10 +921,11 @@ void FastGICP<PointSource, PointTarget, SearchMethodSource, SearchMethodTarget>:
 	      }
 	      // scales[i] = singular_values.cwiseSqrt();
 	      // rotationsq[i] = input_rotationsq[i];
-	      Eigen::Quaterniond q( (double)rotationsq[4*i+0], 
-	      				(double)rotationsq[4*i+1], 
-	      				(double)rotationsq[4*i+2], 
-	      				(double)rotationsq[4*i+3]);
+        // Python/SciPy stores xyzw; Eigen's constructor takes wxyz.
+        Eigen::Quaterniond q(static_cast<double>(rotationsq[4*i+3]),
+                             static_cast<double>(rotationsq[4*i+0]),
+                             static_cast<double>(rotationsq[4*i+1]),
+                             static_cast<double>(rotationsq[4*i+2]));
 	      q = q.normalized();
 	      covariances[i].setZero();
 	      covariances[i].template block<3, 3>(0, 0) = q.toRotationMatrix() * singular_values.asDiagonal() * q.toRotationMatrix().transpose();

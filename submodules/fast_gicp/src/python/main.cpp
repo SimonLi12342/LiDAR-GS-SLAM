@@ -258,6 +258,7 @@ PYBIND11_MODULE(pygicp, m) {
       const auto input_filter = filter.cast<std::vector<int>>();
     	gicp.setSourceFilter(num_trackable, input_filter);
     })
+    // Legacy API name: tracking geometry score (TCS), not the map-management score.
     .def("set_target_control_score", [] (FastGICP& gicp, py::array control_score){
       const auto input_control_score = control_score.cast<std::vector<float>>();
     	gicp.setTargetControl(input_control_score);

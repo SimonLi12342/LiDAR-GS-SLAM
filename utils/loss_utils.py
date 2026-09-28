@@ -14,6 +14,10 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from math import exp
 
+def mean_or_zero(values):
+    """Mean of selected values; an empty selection gives a differentiable zero."""
+    return values.sum() / max(values.numel(), 1)
+
 def l1_loss(network_output, gt):
     loss = torch.abs((network_output - gt))
     loss = torch.where(gt!=0, loss, 0.)

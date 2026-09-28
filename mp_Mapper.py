@@ -15,7 +15,7 @@ REPO_ROOT = os.path.dirname(__file__)
 sys.path.append(REPO_ROOT)
 sys.path.append(os.path.join(REPO_ROOT, "submodules", "MapClosures", "python"))
 from arguments import SLAMParameters
-from utils.loss_utils import l1_loss, ssim
+from utils.loss_utils import l1_loss, ssim, mean_or_zero
 from scene import GaussianModel
 from gaussian_renderer import render,network_gui
 from tqdm import tqdm
@@ -90,6 +90,7 @@ class Mapper(SLAMParameters):
         self.decay_speed = slam.decay_speed
         self.use_densify = slam.use_densify
         self.densify_start_iteration = slam.densify_start_iteration
+        self.use_plane_management = bool(getattr(slam, "use_plane_management", False))
         self.densify_max_screen_size = float(getattr(slam, "densify_max_screen_size", 12.0))
         self.plane_xz_pass = bool(getattr(slam, "plane_xz_pass", True))
         self.plane_xz_pass_ratio = float(getattr(slam, "plane_xz_pass_ratio", 0.3))
@@ -346,7 +347,7 @@ class Mapper(SLAMParameters):
 
                     old_kf_poses, optimized_poses = self.pgo_update()
                     self.apply_pgo_to_final(old_kf_poses, optimized_poses)
-                    ate_rmse = self.evaluate_ate(self.dataloader.gt_poses, self.final_pose.numpy())
+                    ate_rmse = self.evaluate_ate_rmse(self.dataloader.gt_poses, self.final_pose.numpy())
                     self.mapping_ate_rmse_shared[0] = ate_rmse
                     print(f"ATE RMSE: {ate_rmse:.2f} [m]")
                     self.pgo_applied_to_final = True
@@ -495,16 +496,17 @@ class Mapper(SLAMParameters):
                 if valid_mask.dim() == 2: valid_mask = valid_mask.unsqueeze(0)
 
 
-                geom_l1 = torch.abs(valid_mask * (est_depth - gt_depth)).mean()
+                # Normalize by valid pixels; empty selections contribute zero.
+                geom_l1 = mean_or_zero((est_depth - gt_depth)[valid_mask.bool()].abs())
 
-                normal_loss_gradient = (1 - (
+                normal_loss_gradient = mean_or_zero(1 - (
                     est_normal[..., valid_mask[0] == 1.0] * surf_normal[..., valid_mask[0] == 1.0]
-                ).sum(dim=0)).mean()
+                ).sum(dim=0))
 
                 # GICP-based normal loss (from covariance)
-                normal_loss_gicp = (1 - (
+                normal_loss_gicp = mean_or_zero(1 - (
                     est_normal[..., valid_mask_gicp_normal[0] == 1.0] * gt_normal[..., valid_mask_gicp_normal[0] == 1.0]
-                ).sum(dim=0)).mean()
+                ).sum(dim=0))
 
                 normal_loss_gicp *= 0.05
                 if self.train_iter >= self.densify_start_iteration :
@@ -514,11 +516,11 @@ class Mapper(SLAMParameters):
                 normal_loss = normal_loss_gicp + normal_loss_gradient
 
                 # Alpha loss
-                alpha_loss = torch.nn.functional.binary_cross_entropy(
+                alpha_loss = mean_or_zero(torch.nn.functional.binary_cross_entropy(
                     est_alpha[..., valid_mask[0] == 1.0],
                     valid_mask[..., valid_mask[0] == 1.0],
-                    reduction="mean"
-                )
+                    reduction="none"
+                ))
                 alpha_loss *= self.opt_lambda_alpha
 
                 scales_max = self.gaussians.get_scaling.max(dim=1).values
@@ -532,8 +534,8 @@ class Mapper(SLAMParameters):
                 loss_total.backward()
                 self.gaussians.optimizer.step()
 
-                if (self.use_densify and
-                    self.train_iter >= self.densify_start_iteration and
+                # Table 4: opacity pruning is shared by all variants; splitting is optional.
+                if (self.train_iter >= self.densify_start_iteration and
                     self.train_iter % self.densify_frequency == 0):
                     max_screen_size = self.densify_max_screen_size if self.densify_max_screen_size > 0 else None
                     with torch.no_grad():
@@ -541,13 +543,15 @@ class Mapper(SLAMParameters):
                             max_grad=self.densify_grad_threshold,
                             min_opacity=self.pruning_min_opacity,
                             extent=None,
-                            max_screen_size=max_screen_size
-                    )
+                            max_screen_size=max_screen_size,
+                            enable_split=self.use_densify,
+                        )
                 
-                plane_manage_frequency = max(1, int(self.densify_frequency) * 1.5)
+                # Final experimental setting: plane management starts at iteration 300, every 300 iterations.
                 plane_manage_frequency = 300
-                plane_manage_start_iteration = 300 
-                if (self.use_densify and
+                plane_manage_start_iteration = 300
+                # Independent of splitting so Table 4's Plane Prune variant is selectable.
+                if (self.use_plane_management and
                     self.train_iter >= plane_manage_start_iteration and
                     self.train_iter % plane_manage_frequency == 0):
                     plane_manage_time = time.perf_counter()
@@ -1014,12 +1018,13 @@ class Mapper(SLAMParameters):
                 final_pose_np[frame, :3, 3] = trans[j]
                 final_pose_np[frame, 3, :] = [0.0, 0.0, 0.0, 1.0]
 
-    def evaluate_ate(self, gt_traj, est_traj):
+    def evaluate_ate_rmse(self, gt_traj, est_traj):
+        """Translation ATE RMSE after rigid alignment, without scale correction."""
         n = min(len(gt_traj), len(est_traj))
         gt_traj_pts = np.array([gt_traj[idx][:3,3] for idx in range(n)]).T
         est_traj_pts = np.array([est_traj[idx][:3,3] for idx in range(n)]).T
         _, _, trans_error = self.align(gt_traj_pts, est_traj_pts)
-        return trans_error.mean()
+        return np.sqrt(np.mean(trans_error ** 2))
 
 
     def pgo_update(self):

@@ -59,6 +59,7 @@ class SLAMConfig:
     densify_percentage: float = 0.40
     opt_scaling_max: float = 0.1
     use_densify: bool = True
+    use_plane_management: bool = False
     densify_start_iteration: int = 100
 
     # pruning related parameters

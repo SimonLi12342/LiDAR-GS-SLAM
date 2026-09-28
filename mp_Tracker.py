@@ -393,10 +393,12 @@ class Tracker(SLAMParameters):
                     rots = np.reshape(rots, (-1,4))
                     scales = np.reshape(scales, (-1,3))
                     colors = cmap(intensity)[:,:3]
+                    # Zero is the invalid/unset sentinel for map-management scores.
                     init_control_score = np.zeros((points.shape[0],), dtype=np.float32)
                     init_phys_conf = self.compute_phys_conf(pts_ds, rots, scales, current_c2w[:3,:3], rotation_frame="world")
                     
-                    self.reg.set_target_control_score(init_control_score)                   
+                    # Bootstrap with uniform geometry weights before a mapped target exists.
+                    self.reg.set_target_control_score(np.zeros(points.shape[0], dtype=np.float32))
                     self.shared_new_gaussians.input_values(torch.tensor(points),  
                                                         torch.tensor(rots), torch.tensor(scales), 
                                                         torch.tensor(z_values), torch.tensor(trackable_filter),
@@ -557,7 +559,7 @@ class Tracker(SLAMParameters):
                         while not self.target_gaussians_ready[0]:
                             time.sleep(1e-15)
                             
-                        target_points, target_rots, target_scales, target_control_score = self.shared_target_gaussians.get_values_np()
+                        target_points, target_rots, target_scales, _ = self.shared_target_gaussians.get_values_np()
                         self.reg.set_input_target(target_points)
                         self.reg.set_target_covariances_fromqs(target_rots.flatten(), target_scales.flatten())
                         s = np.sort(target_scales, axis=1)
@@ -566,7 +568,8 @@ class Tracker(SLAMParameters):
                         
                         tcs = ratio.flatten()
                       
-                        self.reg.set_target_control_score(target_control_score.flatten())   
+                        # Legacy API name: pass current target geometry, not stored map-control scores.
+                        self.reg.set_target_control_score(tcs)
                         self.target_gaussians_ready[0] = 0
                         
                         
@@ -622,7 +625,7 @@ class Tracker(SLAMParameters):
             self.end_of_dataset[0] = 1
             
             if len(self.gt_poses_matched) > 0:
-                ate_rmse = self.evaluate_ate(self.gt_poses_matched, self.poses)
+                ate_rmse = self.evaluate_ate_rmse(self.gt_poses_matched, self.poses)
                 self.tracking_ate_rmse_shared[0] = ate_rmse
                 print(f"ATE RMSE: {ate_rmse:.2f} [m]")
 
@@ -809,9 +812,10 @@ class Tracker(SLAMParameters):
         trans_error = np.sqrt(np.sum(np.multiply(alignment_error, alignment_error), 0)).A[0]
         return rot, trans, trans_error
 
-    def evaluate_ate(self, gt_traj, est_traj):
+    def evaluate_ate_rmse(self, gt_traj, est_traj):
+        """Translation ATE RMSE after rigid alignment, without scale correction."""
         n = min(len(gt_traj), len(est_traj))
         gt_traj_pts = np.array([gt_traj[idx][:3,3] for idx in range(n)]).T
         est_traj_pts = np.array([est_traj[idx][:3,3] for idx in range(n)]).T
         _, _, trans_error = self.align(gt_traj_pts, est_traj_pts)
-        return trans_error.mean()
+        return np.sqrt(np.mean(trans_error ** 2))
