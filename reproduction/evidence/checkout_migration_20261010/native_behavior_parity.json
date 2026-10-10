@@ -1,0 +1,16 @@
+{
+  "exact_match_fields": [
+    "plane_normal_p95_degrees",
+    "covariance_max_frobenius_error",
+    "zero_footprint_scales",
+    "upstream_numerics_stdout",
+    "passed"
+  ],
+  "passed": true,
+  "native_paths": {
+    "pygicp": "/mnt/d/github/LiDAR-GS-SLAM/build/repaired_native/fast_gicp/pygicp.cpython-310-x86_64-linux-gnu.so",
+    "renderer": "/mnt/d/github/LiDAR-GS-SLAM/build/repaired_native/renderer/diff_surfel_spherical_rasterization_lidargs_safe/_C.cpython-310-x86_64-linux-gnu.so",
+    "cuda_available": true,
+    "gpu": "NVIDIA L40"
+  }
+}

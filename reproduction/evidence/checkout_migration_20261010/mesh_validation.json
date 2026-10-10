@@ -1,0 +1,27 @@
+{
+  "command": [
+    "/mnt/d/anaconda3/envs/lidargs-fresh/bin/python",
+    "/mnt/d/github/LiDAR-GS-SLAM/Splat-LOAM/run.py",
+    "mesh",
+    "/mnt/d/github/LiDAR-GS-SLAM/build/checks/checkout_smoke_40/results/post_pgo",
+    "--output-filename",
+    "/mnt/d/github/LiDAR-GS-SLAM/build/checks/checkout_smoke_40_mesh.ply",
+    "--kf-samples",
+    "5000"
+  ],
+  "samples_per_keyframe": 5000,
+  "integer_rays": true,
+  "stage": "post_pgo",
+  "model_sha256": "c61cf130ce3c549fa395485e9f658dc9a89ac0cf1aa48c5a5193902bf8e89cfb",
+  "profile": "quad_easy_repaired_full_kf30_v1",
+  "native": {
+    "pygicp": "/mnt/d/github/LiDAR-GS-SLAM/build/repaired_native/fast_gicp/pygicp.cpython-310-x86_64-linux-gnu.so",
+    "renderer": "/mnt/d/github/LiDAR-GS-SLAM/build/repaired_native/renderer/diff_surfel_spherical_rasterization_lidargs_safe/_C.cpython-310-x86_64-linux-gnu.so",
+    "cuda_available": true,
+    "gpu": "NVIDIA L40"
+  },
+  "returncode": 0,
+  "export_wall_s": 11.066914319992065,
+  "model_unchanged": true,
+  "success": true
+}

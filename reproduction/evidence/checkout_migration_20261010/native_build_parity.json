@@ -1,0 +1,32 @@
+{
+  "same_fields": [
+    "source_sha256",
+    "python_version",
+    "python_abi",
+    "torch",
+    "torch_cuda",
+    "arch",
+    "nvcc"
+  ],
+  "target_build": {
+    "source_sha256": {
+      "submodules/fast_gicp/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp": "ec671d8610b59af247607ed888d278a4a0491ad3160a5d0cb391234962308bed",
+      "submodules/diff-surfel-spherical-rasterization/cuda_rasterizer/backward.cu": "a5a91a76ede72945f668b5ccdfd49bfeee4410a2ba960216b2081a2367624ea8",
+      "submodules/diff-surfel-spherical-rasterization/cuda_rasterizer/forward.cu": "cf30ffc123212f3c222e4ae043af0cead9ef727dbc21d55f03255512c983470c"
+    },
+    "python": "/mnt/d/anaconda3/envs/lidargs-fresh/bin/python",
+    "python_version": "3.10.22 | packaged by conda-forge | (main, Oct  6 2026, 23:02:24) [GCC 14.4.0]",
+    "python_abi": "cpython-310",
+    "torch": "2.5.1+cu121",
+    "torch_cuda": "12.1",
+    "toolkit": "/mnt/d/anaconda3/envs/ghpr-splatloam",
+    "arch": "8.9",
+    "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2023 NVIDIA Corporation\nBuilt on Mon_Apr__3_17:16:06_PDT_2023\nCuda compilation tools, release 12.1, V12.1.105\nBuild cuda_12.1.r12.1/compiler.32688072_0\n",
+    "binary_sha256": {
+      "fast_gicp/pygicp.cpython-310-x86_64-linux-gnu.so": "50f0ba19031d5dc2425201971e2c724039ca146277c339c2a50f10deec837774",
+      "fast_gicp/build/lib.linux-x86_64-cpython-310/libfast_gicp.so": "58a8c02379185d0b45d1ab04484472b7e297d73b807b0f56b2f790dead7a18c3",
+      "renderer/diff_surfel_spherical_rasterization_lidargs_safe/_C.cpython-310-x86_64-linux-gnu.so": "7f3070b6d2c0f85b84a42b47ba57ee8221c2a4792c480c2ae4880d7642cb7251"
+    }
+  },
+  "linkage": "\tlinux-vdso.so.1 (0x00007ffddbf95000)\n\tlibfast_gicp.so => /mnt/d/github/LiDAR-GS-SLAM/build/repaired_native/fast_gicp/build/lib.linux-x86_64-cpython-310/libfast_gicp.so (0x00007f094b9e3000)\n\tlibpcl_segmentation.so.1.10 => /lib/x86_64-linux-gnu/libpcl_segmentation.so.1.10 (0x00007f094ac2c000)\n\tlibpcl_filters.so.1.10 => /lib/x86_64-linux-gnu/libpcl_filters.so.1.10 (0x00007f094a410000)\n\tlibpcl_search.so.1.10 => /lib/x86_64-linux-gnu/libpcl_search.so.1.10 (0x00007f094a1df000)\n\tlibpcl_common.so.1.10 => /lib/x86_64-linux-gnu/libpcl_common.so.1.10 (0x00007f094a12b000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f0949f47000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f0949f2c000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f0949d3a000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x00007f0949cf8000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f0949ba9000)\n\tlibpcl_ml.so.1.10 => /lib/x86_64-linux-gnu/libpcl_ml.so.1.10 (0x00007f0949b85000)\n\tlibpcl_features.so.1.10 => /lib/x86_64-linux-gnu/libpcl_features.so.1.10 (0x00007f0947409000)\n\tlibpcl_sample_consensus.so.1.10 => /lib/x86_64-linux-gnu/libpcl_sample_consensus.so.1.10 (0x00007f0946717000)\n\tliblz4.so.1 => /lib/x86_64-linux-gnu/liblz4.so.1 (0x00007f09466f6000)\n\tlibpcl_kdtree.so.1.10 => /lib/x86_64-linux-gnu/libpcl_kdtree.so.1.10 (0x00007f094659d000)\n\tlibpcl_octree.so.1.10 => /lib/x86_64-linux-gnu/libpcl_octree.so.1.10 (0x00007f0946349000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f0946324000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f094bab6000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f094631e000)\n"
+}

@@ -1,0 +1,10 @@
+{
+  "repo": "/mnt/d/github/LiDAR-GS-SLAM",
+  "head": "04b916180926878fc6b474970b38d6c12eb84ec3",
+  "origin": "https://github.com/SimonLi12342/LiDAR-GS-SLAM",
+  "status": " M mp_Mapper.py\n",
+  "original_mapper_sha256": "074f3308f3806c50ce49cc4b8ee7b938bd730331b86b269c2313eb1df2d14003",
+  "change_description": "Seven blank/whitespace-only lines after rerun import; no functional change.",
+  "target_commit": "9962eb346fbbb441155bd89cc3d83b033bd66d51",
+  "preserved_stash": "c930ee33d18e1fa7d16281df548e7e97cd1ac4ff"
+}

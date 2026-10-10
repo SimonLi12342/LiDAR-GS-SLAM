@@ -1,0 +1,10 @@
+{
+  "bag": "/mnt/d/dataset/newer_college_download/2021/collect1/2021-07-01-10-37-38-quad-easy-003.bag",
+  "bag_same_file": true,
+  "bag_bytes": 10775549922,
+  "copied_files_sha256": {
+    "gt-nc-quad-easy.csv": "403e9c9bfd7e4f7e1a4d92e26b6c36886cc9adf739ddca254d35a9853c2a21f7",
+    "ncd_quad_easy__os_cloud_node_points_timestamps.npy": "2770fd830f7e92a59cc4fd649c67e3883ba83b5c4ef568ef73cad5687b6d855a"
+  },
+  "dataset_path": "/mnt/d/github/LiDAR-GS-SLAM/build/datasets/ncd_quad_easy"
+}

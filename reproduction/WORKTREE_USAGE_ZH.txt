@@ -1,0 +1,69 @@
+LiDAR-GS-SLAM 指定工作目录：本机运行说明
+
+工作目录：/mnt/d/github/LiDAR-GS-SLAM
+origin：https://github.com/SimonLi12342/LiDAR-GS-SLAM
+分支：main；已验证算法/配置提交：9962eb346fbbb441155bd89cc3d83b033bd66d51。
+本说明及迁移记录后续单独提交；不改变上述修复版算法文件、参数或评分协议。
+
+该目录已作为今后日常开发和运行位置。原先临时发布目录保留实验历史，运行入口
+不依赖其中的代码或二进制。使用tools/run_repaired.py；直接运行旧的
+python gs_icp_slam.py --config_file configs/ncd.yaml不会自动选择本修复profile。
+
+科学设置：Full、KF周期30、overlapped_th/overlapped_th2均0.16、体素0.4m、
+16线程、seed26、全部13项修复。正式运行无帧上限；全局地图没有人工GS数量上限。
+这是已接受的当前质量优先修复版，不是未经修改的官方默认或所有场景已证实最优。
+参数/修改/两次完整成绩/评测口径见同目录ACCEPTED_SETTING_ZH.txt。
+
+本机已用Python3.10的lidargs-fresh环境及CUDA12.1重建私有FastGICP和安全renderer，
+源码和二进制构建记录在build/repaired_native/build_receipt.json。MapClosures在
+当前仓库重建，记录在build/mapclosures_local；其缓存依赖已复制至本机build。
+conda环境在/mnt/d/anaconda3/envs/lidargs-fresh，名称中fresh是环境名，不是源码路径。
+
+本地数据入口：build/datasets/ncd_quad_easy。
+bag链接直指/mnt/d/dataset/newer_college_download/2021/collect1/中的原始bag；
+TUM轨迹和时间戳缓存与历史完整实验逐字节一致，见build/dataset_receipt.json。
+模型/数据/二进制均在忽略目录，不随Git推送；新机器仍需依文档安装和提供数据。
+
+从此目录运行完整Quad Easy（例子输出名不存在时方可运行）：
+
+cd /mnt/d/github/LiDAR-GS-SLAM
+/mnt/d/anaconda3/envs/lidargs-fresh/bin/python tools/run_repaired.py \
+  --dataset build/datasets/ncd_quad_easy \
+  --trajectory build/datasets/ncd_quad_easy/gt-nc-quad-easy.csv \
+  --output output/quad_repaired_01 \
+  --gpu GPU-b67b91dc-d8cd-3483-92a7-00126517c40d
+
+已显式选择本机验证过的L40 UUID；其他主机按实际GPU修改。后续重复用新的输出名，
+如quad_repaired_02，避免覆盖历史。不要将--frames正数测试上限用于正式比较。
+
+导出5000样本/KF网格：
+
+/mnt/d/anaconda3/envs/lidargs-fresh/bin/python tools/mesh_repaired.py \
+  --run output/quad_repaired_01 \
+  --output output/quad_repaired_01_mesh_5000.ply \
+  --samples 5000 \
+  --gpu GPU-b67b91dc-d8cd-3483-92a7-00126517c40d
+
+质量优先离线导出改用--samples 20000和新文件名；不能混用5000和20000成绩。
+mesh默认post-PGO，同一安全renderer、整数射线和原生Poisson，导出不改变冻结地图。
+
+行为复现的含义：同一源码、科学配置、输入和正确的本地原生扩展；不承诺异步
+SLAM每次的高斯数、优化步数、FPS或F-score逐位相同。历史两次统一F20分别为
+74.81%和83.54%，仍全部保留。当前目录迁移验证不替换历史完整实验成绩。
+
+迁移前唯一未提交变化是mp_Mapper.py中的7行空白，已先备份再保存到Git stash：
+c930ee33d18e1fa7d16281df548e7e97cd1ac4ff。
+原文件和补丁另存于real_recon/artifacts/gs_map/lidargs_checkout_migration_20261010。
+不自动把空白改动应用回冻结源码，避免使profile的字节哈希校验失效。
+
+你此前选择自行推送。在本目录完成GitHub登录后执行：
+
+git push origin main
+
+这是普通快进推送；不要强推。本机迁移不会自动修改GitHub远端。
+
+迁移完成验证：8594个跟踪文件在加入本说明前与9962eb3逐字节一致；12个修复
+源码哈希再次通过。同源/同工具链重编译后，固定原生数值检查结果与发布目录
+完全相同。本目录完成40真实帧、有限pre/post位姿及地图、5000样本/KF原生网格
+导出（29851顶点/59551三角形，索引有效，冻结地图未修改）。该短测不作为
+新的完整质量/FPS实验。证据见reproduction/evidence/checkout_migration_20261010。

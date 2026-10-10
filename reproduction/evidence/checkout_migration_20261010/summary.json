@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "profile_source_commit": "9962eb346fbbb441155bd89cc3d83b033bd66d51",
+  "worktree": "/mnt/d/github/LiDAR-GS-SLAM",
+  "full_tree_equal_before_documentation": 8594,
+  "frozen_repaired_files_verified": 12,
+  "same_native_toolchain": true,
+  "fixed_native_tests_exactly_match_release": true,
+  "real_smoke_frames": 40,
+  "finite_pre_post_poses_and_maps": true,
+  "mesh_vertices": 29851,
+  "mesh_triangles": 59551,
+  "mesh_indices_valid": true,
+  "mesh_model_unchanged": true,
+  "full_quality_benchmark_repeated": false,
+  "note": "Same source/configuration and verified local runtime. Async final Gaussian count/F-score/FPS are not guaranteed identical."
+}
