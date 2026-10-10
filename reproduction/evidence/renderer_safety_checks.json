@@ -1,0 +1,37 @@
+{
+  "degenerate_cases": [
+    {
+      "scale": 0.0,
+      "num_rendered": 0,
+      "radii": [
+        0
+      ],
+      "max_output": 0.0
+    },
+    {
+      "scale": 1e-20,
+      "num_rendered": 0,
+      "radii": [
+        0
+      ],
+      "max_output": 0.0
+    },
+    {
+      "scale": 1e-12,
+      "num_rendered": 0,
+      "radii": [
+        0
+      ],
+      "max_output": 0.0
+    }
+  ],
+  "valid_gaussians": 32,
+  "seam_covered": true,
+  "forward_max_difference": 0.0,
+  "gradient_max_differences": [
+    3.259629011154175e-09,
+    2.0489096641540527e-08,
+    1.30385160446167e-08,
+    9.313225746154785e-09
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "completed_final_runs": [
+    "full_final_quality",
+    "full_final_quality_repeat",
+    "full_final_compact"
+  ],
+  "identical_source_and_native_hashes": true,
+  "repeat_configuration_identical": true,
+  "full_input_scans": 1991,
+  "evaluation_pairs": 1988,
+  "checked_common_quality_records": 12,
+  "author_exact_NN_checks": "passed",
+  "reference_SHA256": "77bd93c34b8941aaf59679b3b156320b2c89b38fd4a68847e765ac531f075730",
+  "failure_records_preserved": [
+    "full_so3_default",
+    "full_bootstrap_complete_voxel"
+  ]
+}

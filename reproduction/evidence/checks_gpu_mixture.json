@@ -1,0 +1,55 @@
+{
+  "depth_ratio": 0.5,
+  "components": "two overlapping planes, expected/median depth, alpha, normal loss",
+  "probes": [
+    {
+      "field": "get_xyz",
+      "axis": 0,
+      "analytic": 0.7981523871421814,
+      "finite_difference": 0.7977485656738281,
+      "error": 0.0004038214683532715
+    },
+    {
+      "field": "get_xyz",
+      "axis": 2,
+      "analytic": -0.13560651242733002,
+      "finite_difference": -0.13566017150878906,
+      "error": 5.365908145904541e-05
+    },
+    {
+      "field": "get_scaling",
+      "axis": 0,
+      "analytic": -0.009566647931933403,
+      "finite_difference": -0.0095367431640625,
+      "error": 2.9904767870903015e-05
+    },
+    {
+      "field": "get_scaling",
+      "axis": 1,
+      "analytic": -0.012640377506613731,
+      "finite_difference": -0.012636184692382812,
+      "error": 4.192814230918884e-06
+    },
+    {
+      "field": "get_rotation",
+      "axis": 0,
+      "analytic": -0.0513407438993454,
+      "finite_difference": -0.05125999450683594,
+      "error": 8.074939250946045e-05
+    },
+    {
+      "field": "get_rotation",
+      "axis": 2,
+      "analytic": -0.043003130704164505,
+      "finite_difference": -0.04291534423828125,
+      "error": 8.7786465883255e-05
+    },
+    {
+      "field": "get_opacity",
+      "axis": 0,
+      "analytic": -0.04051995649933815,
+      "finite_difference": -0.040531158447265625,
+      "error": 1.1201947927474976e-05
+    }
+  ]
+}

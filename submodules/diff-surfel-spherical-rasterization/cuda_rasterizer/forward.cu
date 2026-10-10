@@ -156,6 +156,12 @@ preprocessCUDA(int P, const float *orig_points, const glm::vec2 *scales,
     radius = ceil(max(extent.x, extent.y)) * 2;
   }
 
+  // duplicateWithKeys skips radii <= 0. Keep the prefix-sum count at zero
+  // for the same points; otherwise uninitialized tile-list entries are sorted.
+  if (!isfinite(radius) || radius <= 0.0f ||
+      !isfinite(point_image.x) || !isfinite(point_image.y))
+    return;
+
   // Grid filtering
   int2 rect_min, rect_max;
   getRectSpherical(point_image, radius, rect_min, rect_max, grid);

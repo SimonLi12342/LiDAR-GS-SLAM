@@ -1,3 +1,4 @@
+from utils.repair import enabled
 #
 # Copyright (C) 2023, Inria
 # GRAPHDECO research group, https://team.inria.fr/graphdeco
@@ -105,7 +106,7 @@ def depth_to_points(camera,
         indexing="xy"
     )
     points = torch.stack([
-        grid_x - 0.5, grid_y - 0.5,
+        grid_x - (0.0 if enabled("integer_rays") else 0.5), grid_y - (0.0 if enabled("integer_rays") else 0.5),
         torch.ones_like(grid_x)
     ], dim=-1)
     rays_d = points @ intrins_i.T

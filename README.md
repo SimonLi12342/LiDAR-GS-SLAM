@@ -1,3 +1,5 @@
+> **Fork reproduction profile (2026-10-10):** this fork includes disclosed implementation repairs and an explicit Quad Easy Full/KF30 preset. Use `python tools/run_repaired.py`; the old bare entry point does not select the repaired native builds or all repair flags. See [reproduction/ACCEPTED_SETTING_ZH.txt](reproduction/ACCEPTED_SETTING_ZH.txt) for setup, commands, both repeat results, and limitations. This is not an untouched official baseline.
+
 <div align="center">
 
 <h2>Real-Time LiDAR Gaussian Splatting SLAM via Geometry-Aware Covariance Coupling</h2>

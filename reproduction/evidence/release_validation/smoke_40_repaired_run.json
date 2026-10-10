@@ -1,0 +1,70 @@
+{
+  "profile": "quad_easy_repaired_full_kf30_v1",
+  "scope": "smoke_only",
+  "max_frames": 40,
+  "command": [
+    "/mnt/d/anaconda3/envs/lidargs-fresh/bin/python",
+    "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/gs_icp_slam.py",
+    "--config_file",
+    "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/checks/smoke_40/input_config.yaml"
+  ],
+  "source_sha256": {
+    "Splat-LOAM/utils/graphic_utils.py": "618474d648cf2784f496a3265f33449b8b4203544bfe59c4241a5f72233afb6d",
+    "gaussian_renderer/__init__.py": "f88f0127a3188c591cb30400401c78194fa79363dbda726861f4e1f238fffb6f",
+    "gs_icp_slam.py": "089a13f00305f5345f579efa58442a1be13fe9aad0e7cfbf383aecded758afa4",
+    "mp_Mapper.py": "6fce62c4966a0bbe960b5a20362a21b66045e28a36d4dbc4621cc75ecf6b89e9",
+    "mp_Tracker.py": "aed8c0b13a160fc251c1870465e2d4fd7c31d0a6ee11304c27332e9e10d0e8a4",
+    "scene/dataset_readers.py": "26b3f9673ce729413f5b50cf09131ea8fd965ac6d6c50c65a15dcb3389c96b02",
+    "scene/gaussian_model.py": "1e466c4e7324b595cc41bcbe1f9e86ac4cb80d374c1599e5080bc0d367670c3d",
+    "utils/graphics_utils.py": "73cb8dd63c4da6185e01975b299d81533147b80d2638bba8977ca19ef5a841b7",
+    "utils/repair.py": "c93555b75359f740a8ae4422a1dd55bc12a4b950e356bc6723aadca57586cc5e",
+    "submodules/fast_gicp/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp": "ec671d8610b59af247607ed888d278a4a0491ad3160a5d0cb391234962308bed",
+    "submodules/diff-surfel-spherical-rasterization/cuda_rasterizer/backward.cu": "a5a91a76ede72945f668b5ccdfd49bfeee4410a2ba960216b2081a2367624ea8",
+    "submodules/diff-surfel-spherical-rasterization/cuda_rasterizer/forward.cu": "cf30ffc123212f3c222e4ae043af0cead9ef727dbc21d55f03255512c983470c"
+  },
+  "git": {
+    "commit": "c51abf31e82a4bf628df2965702ab36177d089cd",
+    "status": "M README.md\n M Splat-LOAM/utils/graphic_utils.py\n M gaussian_renderer/__init__.py\n M gs_icp_slam.py\n M mp_Mapper.py\n M mp_Tracker.py\n M scene/dataset_readers.py\n M scene/gaussian_model.py\n M submodules/diff-surfel-spherical-rasterization/cuda_rasterizer/backward.cu\n M submodules/diff-surfel-spherical-rasterization/cuda_rasterizer/forward.cu\n M submodules/fast_gicp/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp\n M utils/graphics_utils.py\n?? configs/ncd_repaired_full.yaml\n?? reproduction/\n?? tools/\n?? utils/repair.py",
+    "diff_sha256": "16bb8306ab254ee17f51a65cc8da0ebb7454ea085775bf5bd4f8fbe8ef54559a"
+  },
+  "settings": {
+    "fixes": [
+      "gicp_so3",
+      "gradients",
+      "quaternion",
+      "birth_orientation",
+      "normals",
+      "bootstrap",
+      "confidence",
+      "spherical",
+      "integer_rays",
+      "runtime",
+      "pgo_batch",
+      "pgo_interpolation",
+      "raster_safety"
+    ],
+    "threads": 16,
+    "seed": 26
+  },
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-b67b91dc-d8cd-3483-92a7-00126517c40d",
+    "CUDA_LAUNCH_BLOCKING": null,
+    "PYTORCH_CUDA_ALLOC_CONF": null,
+    "PYTHONPATH": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/repaired_native/fast_gicp:/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/repaired_native/renderer:/opt/ros/noetic/lib/python3/dist-packages",
+    "OMP_NUM_THREADS": "16",
+    "OMP_THREAD_LIMIT": null,
+    "OPENBLAS_NUM_THREADS": "16",
+    "MKL_NUM_THREADS": "16"
+  },
+  "native": {
+    "pygicp": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/repaired_native/fast_gicp/pygicp.cpython-310-x86_64-linux-gnu.so",
+    "renderer": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/repaired_native/renderer/diff_surfel_spherical_rasterization_lidargs_safe/_C.cpython-310-x86_64-linux-gnu.so",
+    "cuda_available": true,
+    "gpu": "NVIDIA L40"
+  },
+  "status": "completed",
+  "started_epoch": 1791644652.0832713,
+  "returncode": 0,
+  "source_unchanged": true,
+  "command_wall_s": 58.27166557312012
+}

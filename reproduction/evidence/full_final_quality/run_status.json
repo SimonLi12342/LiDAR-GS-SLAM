@@ -1,0 +1,55 @@
+{
+  "status": "completed",
+  "command": [
+    "/mnt/d/anaconda3/envs/lidargs-fresh/bin/python",
+    "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/source_final/gs_icp_slam.py",
+    "--config_file",
+    "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/runs/full_final_quality/input_config.yaml"
+  ],
+  "settings": {
+    "name": "full_final_quality",
+    "source": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/source_final",
+    "fixes": "gicp_so3,gradients,quaternion,birth_orientation,normals,bootstrap,confidence,spherical,integer_rays,runtime,pgo_batch,pgo_interpolation,raster_safety",
+    "frames": 0,
+    "overlap": 0.16,
+    "plane": 1,
+    "save_pre": 1,
+    "threads": 16,
+    "keyframe_freq": null,
+    "gpu": "GPU-b67b91dc-d8cd-3483-92a7-00126517c40d",
+    "timeout": 7200
+  },
+  "started_epoch": 1791622192.0898528,
+  "runtime_environment": {
+    "CUDA_LAUNCH_BLOCKING": null,
+    "PYTORCH_CUDA_ALLOC_CONF": null,
+    "CUDA_VISIBLE_DEVICES": "GPU-b67b91dc-d8cd-3483-92a7-00126517c40d",
+    "PYTHONPATH": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fast_gicp_so3:/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/renderer_safe:/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/renderer:/opt/ros/noetic/lib/python3/dist-packages"
+  },
+  "native_fastgicp_origin": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fast_gicp_so3/pygicp.cpython-310-x86_64-linux-gnu.so",
+  "gpu_queue_wait_s": 1.4543533325195312e-05,
+  "base_commit": "c51abf31e82a4bf628df2965702ab36177d089cd",
+  "source_hashes": {
+    "Splat-LOAM/utils/graphic_utils.py": "618474d648cf2784f496a3265f33449b8b4203544bfe59c4241a5f72233afb6d",
+    "gaussian_renderer/__init__.py": "f88f0127a3188c591cb30400401c78194fa79363dbda726861f4e1f238fffb6f",
+    "gs_icp_slam.py": "089a13f00305f5345f579efa58442a1be13fe9aad0e7cfbf383aecded758afa4",
+    "mp_Mapper.py": "6fce62c4966a0bbe960b5a20362a21b66045e28a36d4dbc4621cc75ecf6b89e9",
+    "mp_Tracker.py": "aed8c0b13a160fc251c1870465e2d4fd7c31d0a6ee11304c27332e9e10d0e8a4",
+    "scene/dataset_readers.py": "26b3f9673ce729413f5b50cf09131ea8fd965ac6d6c50c65a15dcb3389c96b02",
+    "scene/gaussian_model.py": "1e466c4e7324b595cc41bcbe1f9e86ac4cb80d374c1599e5080bc0d367670c3d",
+    "utils/graphics_utils.py": "73cb8dd63c4da6185e01975b299d81533147b80d2638bba8977ca19ef5a841b7",
+    "utils/repair.py": "c93555b75359f740a8ae4422a1dd55bc12a4b950e356bc6723aadca57586cc5e",
+    "submodules/MapClosures/python/map_closures/pybind/map_closures_pybind.cpython-310-x86_64-linux-gnu.so": "849b6b7a0a299ed68078f52acd2e0ccec5b7ab2afcf60f5af62728c0b1c12459",
+    "../fast_gicp_so3/pygicp.cpython-310-x86_64-linux-gnu.so": "0ecd9368ecab461daba9bb3526e773a812310818be40b160888895e6209e72d8",
+    "../fast_gicp_so3/build/lib.linux-x86_64-cpython-310/libfast_gicp.so": "017af6bc384c5aa2e2ab0cee090efe0e2a10f04466bfb5b65b3b4ab16d118492",
+    "../fast_gicp_so3/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp": "ec671d8610b59af247607ed888d278a4a0491ad3160a5d0cb391234962308bed",
+    "../renderer_safe/diff_surfel_spherical_rasterization_lidargs_safe/_C.cpython-310-x86_64-linux-gnu.so": "dd349984d58d10d2d33d4ea8f7682f6816466cbc583d55298a16970e0de79827",
+    "../renderer_safe/cuda_rasterizer/forward.cu": "cf30ffc123212f3c222e4ae043af0cead9ef727dbc21d55f03255512c983470c",
+    "../renderer_safe/cuda_rasterizer/backward.cu": "a5a91a76ede72945f668b5ccdfd49bfeee4410a2ba960216b2081a2367624ea8"
+  },
+  "common_instrumentation": "seed26, capped GICP/Torch threads, telemetry, disabled GPU polling, pre/post artifacts",
+  "pid": 1926398,
+  "returncode": 0,
+  "wall_s": 280.2759699821472,
+  "source_unchanged": true
+}

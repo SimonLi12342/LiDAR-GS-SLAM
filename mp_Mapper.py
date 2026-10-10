@@ -1,3 +1,4 @@
+from utils.repair import enabled, record, transform_map
 import os
 import torch
 import torch.multiprocessing as mp
@@ -62,7 +63,10 @@ class Mapper(SLAMParameters):
         self.loop_cooldown_time = slam.loop_cooldown_time
         self.loop_next_allowed_frame = -1
         self.loop_cooldown_lock = threading.Lock()
-        self.debug = True
+        self.debug = False
+        self.repair_mapping = []
+        self.repair_loops = []
+        self.export_stage = "post_pgo"
 
         self.W = slam.W
         self.H = slam.H
@@ -329,12 +333,39 @@ class Mapper(SLAMParameters):
         cam_idx = int(newcam.cam_idx[0])
         mask = (self.gaussians.keyframe_idx.squeeze(-1)==cam_idx)
         pts = self.gaussians.get_xyz[mask].detach().cpu()
+        if enabled("bootstrap"):
+            self.save_local_map(pts, w2c, newcam.cam_idx[0])
+            self.try_loop_closure(len(self.local_maps) - 1)
+            self.is_tracking_keyframe_shared[0] = 0
+            self.is_mapping_keyframe_shared[0] = 0
+        mapping_start = time.perf_counter()
         loop_count = 0
         prev_i = 0
         step_count = 0
         total_elapsed_time = 0.0
         while True:
-            if self.end_of_dataset[0]: 
+            if self.end_of_dataset[0]:
+                scan_mapping_wall_s = time.perf_counter() - mapping_start
+                if enabled("bootstrap"):
+                    self.loop_task_q.join()
+                    self.consume_loop_results()
+                np.save(os.path.join(self.output_path, "poses_pre_pgo.npy"), self.final_pose.numpy().copy())
+                np.save(os.path.join(self.output_path, "gaussian_source_kf.npy"), self.gaussians.keyframe_idx.detach().cpu().numpy())
+                np.savez(os.path.join(self.output_path, "pgo_inputs.npz"),
+                    frame_ids=np.array([int(x) for x in self.all_kf_poses_idxs]),
+                    poses=np.asarray(self.all_kf_poses),
+                    loop_indices=np.array([(a,b) for a,b,_ in self.collected_loops], dtype=int).reshape(-1,2),
+                    loop_poses=np.array([T for _,_,T in self.collected_loops]).reshape(-1,4,4))
+                record(os.path.join(self.output_path, "mapping_diagnostics.json"), dict(
+                    events=self.repair_mapping, loops=self.repair_loops,
+                    births=self.gaussians.repair_births, prunes=self.gaussians.repair_prunes,
+                    actual_adam_steps=int(self.train_iter), scan_mapping_wall_s=scan_mapping_wall_s,
+                    keyframe_ids=[int(x) for x in self.all_kf_poses_idxs],
+                    fixes=sorted(__import__('utils.repair', fromlist=['FIXES']).FIXES)))
+                if os.environ.get("LIDARGS_SAVE_PRE", "1") == "1":
+                    self.export_stage = "pre_pgo"
+                    self.export_for_meshing()
+                    self.export_stage = "post_pgo"
                 mesh_pcd_path = os.path.join(self.output_path, "mesh_ready_pcd.ply")
                 self.gaussians.save_pcd_for_mesh(mesh_pcd_path, opacity_threshold=0.8)
                 self.final_gaussian_count_shared[0] = int(self.gaussians.get_xyz.shape[0])
@@ -351,6 +382,7 @@ class Mapper(SLAMParameters):
                     self.mapping_ate_rmse_shared[0] = ate_rmse
                     print(f"ATE RMSE: {ate_rmse:.2f} [m]")
                     self.pgo_applied_to_final = True
+                np.save(os.path.join(self.output_path, "poses_post_pgo.npy"), self.final_pose.numpy().copy())
                 break
             start_time = time.perf_counter()
             self.consume_loop_results()
@@ -447,6 +479,7 @@ class Mapper(SLAMParameters):
 
 
                 else:
+                    new_keyframe = False
                     train_idx = random.choice(range(len(self.mapping_cams)))
                     viewpoint_cam = self.mapping_cams[train_idx]
                 self.training = True
@@ -466,7 +499,8 @@ class Mapper(SLAMParameters):
                 W = float(viewpoint_cam.image_width[0].item())
                 H = float(viewpoint_cam.image_height[0].item())
                 dist = torch.norm(pts_cam, dim=-1)
-                vis_mask = (z > 0) & (z < self.depth_trunc) 
+                vis_mask = ((dist > 0) & (dist < self.depth_trunc) if enabled("spherical")
+                            else (z > 0) & (z < self.depth_trunc))
                 active_idx = torch.where(vis_mask)[0]
                 if active_idx.numel() == 0:
                     active_idx = torch.arange(xyz.shape[0], device=xyz.device)
@@ -488,7 +522,8 @@ class Mapper(SLAMParameters):
 
                 _ , ssim_val = ssim(est_depth.unsqueeze(0), gt_depth.unsqueeze(0))
                 dssim_loss = (1.0 - ssim_val) * self.lambda_dssim
-                valid_mask_gicp_normal = (gt_normal != 0).float()
+                valid_mask_gicp_normal = ((torch.linalg.vector_norm(gt_normal, dim=0, keepdim=True) > 0).expand_as(gt_normal).float()
+                                          if enabled("normals") else (gt_normal != 0).float())
                 valid_mask_gicp_normal *= valid_mask
                 
                 if est_depth.dim() == 2: est_depth = est_depth.unsqueeze(0)
@@ -531,6 +566,13 @@ class Mapper(SLAMParameters):
 
                 loss_total = geom_l1 + alpha_loss  + reg_scales + normal_loss
 
+                if not bool(torch.isfinite(loss_total)):
+                    raise FloatingPointError(f"Nonfinite mapping loss at step {self.train_iter}")
+                if new_keyframe or self.train_iter % 50 == 0:
+                    self.repair_mapping.append(dict(step=int(self.train_iter), frame=int(viewpoint_cam.cam_idx[0]),
+                        new_keyframe=bool(new_keyframe), gaussians=int(len(self.gaussians.get_xyz)),
+                        loss=float(loss_total.detach()), normal_pixels=int((valid_mask_gicp_normal[0] > 0).sum()),
+                        active_gaussians=int(len(active_idx))))
                 loss_total.backward()
                 self.gaussians.optimizer.step()
 
@@ -570,14 +612,14 @@ class Mapper(SLAMParameters):
                         plane_manage_duration = time.perf_counter() - plane_manage_time
              
                 elapsed = time.perf_counter()-start_time
-                gpu_util += self.read_gpu_util()
+                gpu_util += 0.0  # External timing; avoid per-iteration GPU polling subprocess.
                 self.train_iter += 1
                 total_elapsed_time += elapsed
                 if total_elapsed_time > 0:
                     avg_fps = self.train_iter / total_elapsed_time
                     self.mapping_avg_fps_shared[0] = avg_fps
                 
-                torch.cuda.empty_cache()
+                torch.cuda.empty_cache() if not enabled("runtime") else None
     def read_gpu_util(self):
         out = subprocess.check_output(
         ["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"]
@@ -597,7 +639,7 @@ class Mapper(SLAMParameters):
             pass
         
         # Create Splat-LOAM compatible directory structure
-        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        date_str = self.export_stage
         result_folder = os.path.join(self.output_path, "results", date_str)
         models_folder = os.path.join(result_folder, "models")
         os.makedirs(models_folder, exist_ok=True)
@@ -649,7 +691,7 @@ class Mapper(SLAMParameters):
             
             frame_entry = {
                 "id": i,
-                "timestamp": float(i), # Use index as dummy timestamp
+                "timestamp": float(self.dataloader.get_timestamp(int(cam.cam_idx[0]))),
                 "model_T_frame": mTf,
                 "projmatrix": proj,
                 "model_id": 0
@@ -938,7 +980,8 @@ class Mapper(SLAMParameters):
                 self.loop_result_q.put((closure.source_id, closure.target_id, T))
             except Exception as e:
                 print(f"[Loop Worker] Exception: {e}")
-                continue
+            finally:
+                self.loop_task_q.task_done()
 
     def align(self, model, data):
         np.set_printoptions(precision=3, suppress=True)
@@ -979,6 +1022,19 @@ class Mapper(SLAMParameters):
         cam_to_pose_idx = {int(cam_idx): i for i, cam_idx in enumerate(self.all_kf_poses_idxs)}
 
         final_pose_np = self.final_pose.numpy()
+        if enabled("pgo_interpolation"):
+            ids = np.array(sorted(cam_to_pose_idx), dtype=int)
+            deltas = np.array([new_kf_poses[cam_to_pose_idx[k]] @ np.linalg.inv(old_kf_poses[cam_to_pose_idx[k]]) for k in ids])
+            if len(ids) == 1:
+                final_pose_np[:] = deltas[0] @ final_pose_np.copy()
+            else:
+                frame_ids = np.clip(np.arange(len(final_pose_np)), ids[0], ids[-1])
+                rotations = Slerp(ids.astype(float), R.from_matrix(deltas[:, :3, :3]))(frame_ids).as_matrix()
+                translations = np.column_stack([np.interp(frame_ids, ids, deltas[:, j, 3]) for j in range(3)])
+                correction = np.tile(np.eye(4), (len(frame_ids), 1, 1))
+                correction[:, :3, :3], correction[:, :3, 3] = rotations, translations
+                final_pose_np[:] = correction @ final_pose_np.copy()
+            return
         n_frames = final_pose_np.shape[0]
 
         kf_list = [int(x) for x in self.tracking_kf_idxs]
@@ -1048,12 +1104,16 @@ class Mapper(SLAMParameters):
         PGM.optimizePoseGraph()
         
         optimized_poses = PGM.getValues(len(self.all_kf_poses))
+        if enabled("pgo_batch"):
+            transform_map(self.gaussians, [int(x) for x in self.all_kf_poses_idxs],
+                          [new @ np.linalg.inv(old) for new, old in zip(optimized_poses, self.all_kf_poses)])
                    
         for i, kf_pose in enumerate(self.all_kf_poses):
 
             delta = optimized_poses[i]@np.linalg.inv(kf_pose)
             cam_idx = int(self.all_kf_poses_idxs[i])
-            self.gaussians.transform_gaussians(cam_idx, delta)
+            if not enabled("pgo_batch"):
+                self.gaussians.transform_gaussians(cam_idx, delta)
 
             if i < len(self.mapping_cams):
                 c2w = optimized_poses[i]
@@ -1107,6 +1167,8 @@ class Mapper(SLAMParameters):
         T = reg.align(init_T)  # source -> target
         fitness = reg.get_fitness_score(self.loop_max_corr)
         ok = fitness < self.loop_overlap_th
+        self.repair_loops.append(dict(fitness=float(fitness), accepted=bool(ok),
+                                     source_points=len(src), target_points=len(tgt), transform=T.tolist()))
         return ok, T
     
     def consume_loop_results(self):

@@ -32,7 +32,8 @@ class DatasetReader(ABC):
         
     def __len__(self):
         if self.cloud_reader:
-            return len(self.cloud_reader)
+            cap = int(os.environ.get("LIDARGS_MAX_FRAMES", "0"))
+            return min(cap, len(self.cloud_reader)) if cap > 0 else len(self.cloud_reader)
         return 0
         
     def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -176,8 +177,9 @@ class DatasetReader(ABC):
 
              return self.cloud_reader.get_timestamp(self.cloud_reader.filenames[idx])
 
-        # ROSBAG case?
-
+        # Actual bag timestamp for export; GT association itself is unchanged.
+        if hasattr(self.cloud_reader, "get_timestamp"):
+            return self.cloud_reader.get_timestamp(idx)
         return 0.0
 
 

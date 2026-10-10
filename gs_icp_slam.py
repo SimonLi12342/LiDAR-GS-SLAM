@@ -21,6 +21,10 @@ from scene.dataset_readers import get_dataset_reader
 from utils.config_utils import load_configuration, DatasetType
 
 torch.multiprocessing.set_sharing_strategy('file_system')
+torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "8")))
+np.random.seed(26)
+torch.manual_seed(26)
+__import__('random').seed(26)
 
 class Pipe():
     def __init__(self, convert_SHs_python, compute_cov3D_python, debug):
@@ -32,6 +36,9 @@ class GS_ICP_SLAM(SLAMParameters):
     def __init__(self, args, cfg):
         super().__init__()
         self.cfg = cfg
+        from omegaconf import OmegaConf
+        os.makedirs(cfg.output_path, exist_ok=True)
+        OmegaConf.save(cfg, os.path.join(cfg.output_path, "effective_config.yaml"))
         self.dataset_path = cfg.data.dataset_path
         if args.output_path: cfg.output_path = args.output_path
         self.output_path = cfg.output_path

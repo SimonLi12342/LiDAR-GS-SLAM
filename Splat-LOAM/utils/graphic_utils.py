@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 from typing import NamedTuple
@@ -44,7 +45,7 @@ def depth_to_points(camera,
         indexing="xy"
     )
     points = torch.stack([
-        grid_x - 0.5, grid_y - 0.5,
+        grid_x - (0.0 if os.environ.get("LIDARGS_MESH_INTEGER_RAYS") == "1" else 0.5), grid_y - (0.0 if os.environ.get("LIDARGS_MESH_INTEGER_RAYS") == "1" else 0.5),
         torch.ones_like(grid_x)
     ], dim=-1)
     rays_d = points @ intrins_i.T

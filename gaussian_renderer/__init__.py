@@ -1,11 +1,12 @@
+from utils.repair import enabled, xyzw_to_wxyz
 import torch
 from scene.shared_objs import SharedCam
 from scene.gaussian_model import GaussianModel
 from utils.graphics_utils import depth_to_normal
-from diff_surfel_spherical_rasterization import (
-    GaussianRasterizer,
-    GaussianRasterizationSettings
-)
+import importlib
+_native = importlib.import_module("diff_surfel_spherical_rasterization_lidargs_safe" if enabled("raster_safety") else ("diff_surfel_spherical_rasterization_lidargs_repaired" if enabled("gradients") else "diff_surfel_spherical_rasterization"))
+GaussianRasterizer = _native.GaussianRasterizer
+GaussianRasterizationSettings = _native.GaussianRasterizationSettings
 
 
 def render(
@@ -40,6 +41,9 @@ def render(
         rotations = model.get_rotation[gaussian_indices]
         if scales.shape[1] == 3:
             scales = scales[:, :2].contiguous()
+
+    if enabled("quaternion"):
+        rotations = xyzw_to_wxyz(rotations).contiguous()
 
     means2D = torch.zeros_like(means3D,dtype=torch.float32, device=means3D.device)
 

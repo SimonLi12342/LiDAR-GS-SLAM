@@ -1,0 +1,28 @@
+{
+  "native": {
+    "pygicp": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/repaired_native/fast_gicp/pygicp.cpython-310-x86_64-linux-gnu.so",
+    "renderer": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fork_release/build/repaired_native/renderer/diff_surfel_spherical_rasterization_lidargs_safe/_C.cpython-310-x86_64-linux-gnu.so",
+    "cuda_available": true,
+    "gpu": "NVIDIA L40"
+  },
+  "plane_normal_p95_degrees": [
+    0.009149842560988499,
+    0.008345974216258054,
+    0.008283045570637523,
+    0.00848469257082834,
+    0.008601472596441435,
+    0.007790845534579164,
+    0.007953820577887625,
+    0.008027443265945618,
+    0.00818538451272594,
+    0.008233818099735842
+  ],
+  "covariance_max_frobenius_error": 4.162639644342358e-08,
+  "zero_footprint_scales": [
+    0.0,
+    1e-20,
+    1e-12
+  ],
+  "upstream_numerics_stdout": "PASS: source and target xyzw quaternions produce the expected GICP covariance/Hessian.\nPASS: tracker and mapper ATE helpers agree with EVO RMSE, not mean error.\nPASS: valid-pixel loss ignores invalid padding and empty depth/alpha selections have zero gradients.\nPASS: zero map-control sentinels do not affect split quantiles or get selected.\nPASS: opacity pruning runs both with and without optional splitting.\n",
+  "passed": true
+}

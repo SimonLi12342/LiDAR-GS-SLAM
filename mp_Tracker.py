@@ -1,3 +1,4 @@
+from utils.repair import enabled, xyzw_to_wxyz, record, orient_towards_sensor
 import os
 import torch
 import torch.multiprocessing as mp
@@ -58,6 +59,8 @@ class Tracker(SLAMParameters):
         self.keyframe_freq = slam.keyframe_freq
         self.max_correspondence_distance = slam.max_correspondence_distance
         self.reg = pygicp.FastGICP()
+        self.reg.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "8")))
+        self.repair_frames = []
         
         self.dataloader = None
         self.poses = []
@@ -141,19 +144,22 @@ class Tracker(SLAMParameters):
         rotation_frame="sensor",
         planarity_threshold=0.1,
         grazing_threshold=0.05,
+        projection_K=None,
     ):
         image_height = self.H
         image_width = self.W
         pts = np.asarray(cloud, dtype=np.float32)
-        K, _, vfov, hfov = pyp.calculate_spherical_intrinsics(pts.T, image_height, image_width)
+        if projection_K is None:
+            K, _, vfov, hfov = pyp.calculate_spherical_intrinsics(pts.T, image_height, image_width)
+        else:
+            K = projection_K
         projector = pyp.Camera(image_height, image_width, K, 0, self.depth_trunc, pyp.CameraModel.Spherical)
         lut, _ = projector.project(pts.T)
         normal_image = np.zeros((image_height, image_width, 3), dtype=np.float32)
         rots_scipy = Rotation.from_quat(gicp_rotations)  # xyzw
         rot_matrices = rots_scipy.as_matrix()  # (N, 3, 3)
         scales = gicp_scales
-        normals_from_rot = np.array([rot_matrices[i, :, np.argmin(scales[i])]
-                                     for i in range(len(scales))])
+        normals_from_rot = rot_matrices[np.arange(len(scales)), :, np.argmin(scales, axis=1)]
         if rotation_frame == "sensor":
             normals_sensor = normals_from_rot
         elif rotation_frame == "world":
@@ -400,7 +406,7 @@ class Tracker(SLAMParameters):
                     # Bootstrap with uniform geometry weights before a mapped target exists.
                     self.reg.set_target_control_score(np.zeros(points.shape[0], dtype=np.float32))
                     self.shared_new_gaussians.input_values(torch.tensor(points),  
-                                                        torch.tensor(rots), torch.tensor(scales), 
+                                                        torch.tensor(orient_towards_sensor(rots, points, current_c2w[:3,3]) if enabled("birth_orientation") else rots), torch.tensor(scales),
                                                         torch.tensor(z_values), torch.tensor(trackable_filter),
                                                         torch.tensor(init_control_score),torch.tensor(init_phys_conf))
                     
@@ -413,9 +419,10 @@ class Tracker(SLAMParameters):
                         scales,
                         current_c2w[:3,:3],
                         current_c2w[:3,3],
-                        rotation_frame="world"
+                        rotation_frame="world",
+                        projection_K=K if enabled("normals") else None
                         )
-                    self.shared_cam.setup_cam(current_w2c[:3,:3], current_w2c[:3,3], depth_image,K)
+                    self.shared_cam.setup_cam(current_w2c[:3,:3], current_w2c[:3,3], depth_image, K, normal_image if enabled("normals") else None)
                     self.shared_cam.cam_idx[0] = self.iteration_images
                     
                     self.is_tracking_keyframe_shared[0] = 1
@@ -518,7 +525,7 @@ class Tracker(SLAMParameters):
                         scales = np.reshape(scales, (-1,3))
                        
                         phys_conf_start_time = time.perf_counter()
-                        phys_conf_frame = self.compute_phys_conf(pts_ds, rots_local, scales, current_c2w[:3,:3], rotation_frame="world")
+                        phys_conf_frame = self.compute_phys_conf(pts_ds, rots_local, scales, current_c2w[:3,:3], rotation_frame="sensor" if enabled("confidence") else "world")
                         
                         phys_conf_duration = time.perf_counter() - phys_conf_start_time
 
@@ -546,13 +553,13 @@ class Tracker(SLAMParameters):
                         control_score_frame = control_score_frame[:N]
                         phys_conf_frame = phys_conf_frame[:N]
                         self.shared_new_gaussians.input_values(torch.tensor(points), 
-                                                        torch.tensor(rots), torch.tensor(scales), 
+                                                        torch.tensor(orient_towards_sensor(rots, points, current_c2w[:3,3]) if enabled("birth_orientation") else rots), torch.tensor(scales),
                                                         torch.tensor(z_values), torch.tensor(trackable_filter),
                                                         torch.tensor(control_score_frame), torch.tensor(phys_conf_frame))
 
                         depth_image, valid_mask, K = self.make_range_image(raw_points, self.H, self.W)
-                        normal_image = self.make_normal_image(pts_ds, rots_local, scales, current_c2w[:3,:3], current_c2w[:3,3])
-                        self.shared_cam.setup_cam(current_w2c[:3,:3], current_w2c[:3,3], depth_image,K)
+                        normal_image = self.make_normal_image(pts_ds, rots_local, scales, current_c2w[:3,:3], current_c2w[:3,3], projection_K=K if enabled("normals") else None)
+                        self.shared_cam.setup_cam(current_w2c[:3,:3], current_w2c[:3,3], depth_image, K, normal_image if enabled("normals") else None)
                         self.shared_cam.cam_idx[0] = self.iteration_images
                         self.is_tracking_keyframe_shared[0] = 1
                         
@@ -589,32 +596,45 @@ class Tracker(SLAMParameters):
                         rots = self.quaternion_multiply(R_d_q, rots)
                         scales = np.array(self.reg.get_source_scales())
                         scales = np.reshape(scales, (-1,3))
-                        phys_conf_frame = self.compute_phys_conf(pts_ds, rots_local, scales, current_c2w[:3,:3], rotation_frame="world")
+                        phys_conf_frame = self.compute_phys_conf(pts_ds, rots_local, scales, current_c2w[:3,:3], rotation_frame="sensor" if enabled("confidence") else "world")
                         intensity = self.reg.get_source_intensities()
                         intensity = np.clip(intensity, 0., 1.)
                         intensity = intensity / 2.
                         colors = cmap(intensity)[:,:3]
 
                         self.shared_new_gaussians.input_values(torch.tensor(points), 
-                                                        torch.tensor(rots), torch.tensor(scales), 
+                                                        torch.tensor(orient_towards_sensor(rots, points, current_c2w[:3,3]) if enabled("birth_orientation") else rots), torch.tensor(scales),
                                                         torch.tensor(z_values), torch.tensor(trackable_filter),
                                                         torch.tensor(control_score_frame),torch.tensor(phys_conf_frame))
                         
                         depth_image, valid_mask, K = self.make_range_image(raw_points, self.H, self.W)
-                        normal_image = self.make_normal_image(pts_ds, rots_local, scales, current_c2w[:3,:3], current_c2w[:3,3])
-                        self.shared_cam.setup_cam(current_w2c[:3,:3], current_w2c[:3,3], depth_image,K)
+                        normal_image = self.make_normal_image(pts_ds, rots_local, scales, current_c2w[:3,:3], current_c2w[:3,3], projection_K=K if enabled("normals") else None)
+                        self.shared_cam.setup_cam(current_w2c[:3,:3], current_w2c[:3,3], depth_image, K, normal_image if enabled("normals") else None)
                         self.shared_cam.cam_idx[0] = self.iteration_images
                         self.is_mapping_keyframe_shared[0] = 1
                         
                         ts = self.dataloader.get_timestamp(self.iteration_images)
                 
+                self.repair_frames.append(dict(frame=int(ii), downsampled_points=int(len(pts_ds)),
+                    tracking_keyframe=bool(ii == 0 or if_tracking_keyframe),
+                    mapping_keyframe=bool(if_mapping_keyframe),
+                    overlap=None if ii == 0 else float(len_corres / len(distances)),
+                    frame_processing_s=float(time.perf_counter() - frame_start)))
                 pbar.update(1)
                 FPS = 1.0 / (time.perf_counter() - frame_start)
                 self.tracking_fps += FPS
                 
                 self.iteration_images += 1
-                torch.cuda.empty_cache()
+                torch.cuda.empty_cache() if not enabled("runtime") else None
             
+            tracking_wall_s = time.time() - self.total_start_time
+            np.save(os.path.join(self.output_path, "poses_tracking.npy"), np.asarray(self.poses))
+            record(os.path.join(self.output_path, "tracking_diagnostics.json"), dict(
+                frames=self.repair_frames, scan_wall_s=tracking_wall_s,
+                scan_wall_fps=len(self.repair_frames)/tracking_wall_s))
+            if enabled("bootstrap"):
+                while self.is_tracking_keyframe_shared[0] or self.is_mapping_keyframe_shared[0]:
+                    time.sleep(.001)
             self.save_traj(self.iteration_images, self.poses)
             tracking_fps = self.tracking_fps / self.iteration_images
             print(f"Average Tracking FPS: {tracking_fps:.2f}")

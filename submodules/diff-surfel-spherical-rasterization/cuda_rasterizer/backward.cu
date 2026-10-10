@@ -246,9 +246,9 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         float beta_dot_Tu = dotf4x3(Tu, beta);
         float beta_dot_Tv = dotf4x3(Tv, beta);
         float2 dL_ds = {-alpha * dL_dalpha * s.x +
-                            beta_dot_Tu * alpha * T * dLd_depth / depth,
+                            beta_dot_Tu * dLd_depth / depth,
                         -alpha * dL_dalpha * s.y +
-                            beta_dot_Tv * alpha * T * dLd_depth / depth};
+                            beta_dot_Tv * dLd_depth / depth};
 
         float3 dL_dp = {dL_ds.x / p.z, dL_ds.y / p.z,
                         -(dL_ds.x * p.x + dL_ds.y * p.y) / (p.z * p.z)};
@@ -276,8 +276,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         atomicAdd(&dL_dtransMat[global_id * 12 + 10], dL_dTw.z);
         // atomicAdd(&dL_dtransMat[global_id * 12 + 11], 0.0f);
       } else {
-        float2 dL_dd = {-2 * alpha * dL_dalpha * FilterInvSquare * d.x,
-                        -2 * alpha * dL_dalpha * FilterInvSquare * d.y};
+        float2 dL_dd = {-alpha * dL_dalpha * FilterInvSquare * d.x,
+                        -alpha * dL_dalpha * FilterInvSquare * d.y};
 
         const float _ss = Tw.x * Tw.x + Tw.y * Tw.y;
         const float _sn = sqrtf(_ss);
@@ -286,10 +286,10 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         const float focal_y = projmatrix[5];
         float3 dL_dTw = {
             focal_x * dL_dd.x * (-Tw.y / _ss) +
-                focal_y * dL_dd.y * (-Tw.x * Tw.z / (_sn * depth2d)),
+                focal_y * dL_dd.y * (-Tw.x * Tw.z / (_sn * depth2d * depth2d)),
             focal_x * dL_dd.x * (Tw.x / _ss) +
-                focal_y * dL_dd.y * (-Tw.y * Tw.z / (_sn * depth2d)),
-            focal_y * dL_dd.y * _sn / depth2d};
+                focal_y * dL_dd.y * (-Tw.y * Tw.z / (_sn * depth2d * depth2d)),
+            focal_y * dL_dd.y * _sn / (depth2d * depth2d)};
 
         dL_dTw = dL_dTw + (dLd_depth / depth2d) * tofloat3(Tw);
         atomicAdd(&dL_dtransMat[global_id * 12 + 8], dL_dTw.x);

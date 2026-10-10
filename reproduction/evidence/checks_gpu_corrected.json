@@ -1,0 +1,44 @@
+{
+  "birth_orientation_covariance_max_error": 1.1102230246251565e-16,
+  "batched_PGO": {
+    "xyz_max_m": 2.901005817790292e-07,
+    "rotation_max_element_error": 1.6813783365599022e-07
+  },
+  "ply_quaternion_boundary": "passed",
+  "integer_ray_backprojection_max_m": 1.3332876864780019e-06,
+  "native_render_plane": {
+    "pixels": 161,
+    "min_abs_normal_cos": 1.0000000059335035,
+    "device": "NVIDIA L40"
+  },
+  "native_gradient_probe": [
+    {
+      "field": "get_xyz",
+      "axis": 0,
+      "analytic": 0.9820840358734131,
+      "finite_difference": 0.9820461273193359,
+      "absolute_error": 3.790855407714844e-05
+    },
+    {
+      "field": "get_scaling",
+      "axis": 0,
+      "analytic": 0.047780074179172516,
+      "finite_difference": 0.0476837158203125,
+      "absolute_error": 9.635835886001587e-05
+    },
+    {
+      "field": "get_rotation",
+      "axis": 0,
+      "analytic": 0.0017723620403558016,
+      "finite_difference": 0.0019073486328125,
+      "absolute_error": 0.00013498659245669842
+    },
+    {
+      "field": "get_opacity",
+      "axis": 0,
+      "analytic": 0.0515143945813179,
+      "finite_difference": 0.05173683166503906,
+      "absolute_error": 0.0002224370837211609
+    }
+  ]
+}

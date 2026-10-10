@@ -1,0 +1,20 @@
+{
+  "source_parity": {
+    "measured_repaired_files": 12,
+    "other_implementation_files_unchanged": 4668
+  },
+  "smoke_frames": 40,
+  "finite_pre_post_poses": true,
+  "existing_output_refused": true,
+  "native_tests_passed": true,
+  "smoke_is_not_quality_measurement": true,
+  "mapclosures_build": "Unmodified source rebuilt; original cached Sophus/HBST; CMake3.31.8. Initial system3.16 configure attempt failed and was retained under build/mapclosures_validation.",
+  "mesh_export": {
+    "passed": true,
+    "model_unchanged": true,
+    "samples_per_keyframe": 5000,
+    "poisson_depth": 10,
+    "vertices": 29560,
+    "triangles": 58964
+  }
+}

@@ -1,0 +1,129 @@
+LiDAR-GS-SLAM 修复与完整验证（2026-10-10）
+状态：completed
+
+结论：高斯膨胀显著缓解，速度与质量明显改善；尚未复现论文22.15 FPS，也未证明已获得稳定一致的论文质量。
+固定官方最新提交 c51abf31；保留原仓库、原安装扩展和S2b。修复仅在独立目录实施。
+每次完整运行读取本地 Quad Easy bag 全部1991帧；统一质量/ATE使用冻结1988帧配对与独立Leica参考。
+不能将修复版称为未修改官方结果，也不能将这里的共同评测直接等同论文表格。
+
+已证实的问题与边界
+1. FastGICP把可能det=-1的SVD特征基直接变成四元数。独立平面试验最差P95法向误差81.03度；
+   只翻转一个切向轴形成SO(3)后降到0.00914度，协方差重建最大误差4.17e-8，原GICP协方差/配准公式不变。
+2. 内部xyzw与CUDA/标准PLY的wxyz边界不一致；同时补齐法向传递、同扫描投影K、法向有效mask、
+   传感器/世界法向标签、特征向量朝向，球面渲染不再预先丢掉负z半空间。
+3. 原CUDA尺度/球面投影等后向导数与有限差分不符。独立后向修复不改前向；单面和两面重叠
+   的深度/alpha/法向联合损失通过真实L40有限差分检查。
+4. NCD的0.005是平方距离，半径约7.07cm，而输入/反馈点云体素边长40cm。短对照重叠率
+   中位数约7%，所有后续帧均低于60%关键帧门限，持续产生新GS，异步优化负担激增。
+   .16门限来自0.4m体素尺度；不声称作者论文用了该值。未引入GS硬上限/跨帧去重/S2b融合。
+5. 首帧共享数据重复消费、末帧/闭环队列排空、PGO全图重复复制及非KF插值问题各自修复并留开关。
+   PGO仍为作者的来源KF刚体修正，不新增后端算法；主运行保留loop_sigma=1e-6。
+   初版去重后未把第0张局部地图登记到闭环库；source_bootstrap_complete独立补齐该调用。
+   full_bootstrap_complete_voxel中途CUDA越界失败；同源同步诊断完成1991帧，失败记录保留。
+   独立小型CUDA复现进一步证实零投影半径的瓦片计数与写入条件不一致，会留下未初始化分箱数据。
+   source_final选用独立renderer_safe修正该边界，包含首帧闭环库登记；最终组为full_final_quality/compact。
+   正常32个高斯（含全景接缝）前向一致，有限梯度差异<2.1e-8；零/极小尺寸不再分配虚假瓦片。
+   未捕获失败全序列的GPU状态，不能声称已证明该次崩溃只由零半径缺陷造成。
+6. 原mesher反投影使用半像素偏移，与CUDA整数射线不一致；独立导出开关与5000/10000/20000样本收敛分开测试。
+   原Poisson/alpha/dist/density参数保留；限制OpenMP线程只处理运行时争用。
+
+完整运行表（扫描墙钟含读数据；不含离线网格与评价）
+run | GS | KF | Adam/KF | scan FPS | command seconds
+full_upstream_fullmode | 15522489 | 1993 | 1.18 | 1.777 | 1251.70
+full_so3_default | failed
+full_so3_halfvoxel | 3611447 | 544 | 12.23 | 3.636 | 612.68
+full_so3_voxel | 303831 | 73 | 129.78 | 8.290 | 268.28
+full_so3_voxel_split | 357977 | 74 | 124.41 | 8.558 | 264.27
+full_so3_voxel_threads16 | 318540 | 72 | 124.58 | 9.327 | 244.27
+full_so3_voxel_threads16_kf100 | 139018 | 23 | 316.00 | 10.621 | 212.21
+full_bootstrap_complete_voxel | failed
+full_final_quality | 323401 | 71 | 108.75 | 8.530 | 280.28
+full_final_compact | 127097 | 24 | 463.33 | 8.518 | 274.31
+full_final_quality_repeat | 347266 | 72 | 82.97 | 11.774 | 192.20
+
+共同未截断质量协议（距离单位m；F10/F20百分数；ATE为真实RMSE）
+run | stage | export | F10 | F20 | recon->ref | ref->recon | ATE
+full_final_compact | post_pgo | native_default_integer_rays_safe | 61.7377 | 79.1378 | 0.120182 | 0.448556 | 0.140818
+full_final_compact | post_pgo | native_samples_20000_integer_rays_safe | 66.0684 | 83.4600 | 0.092758 | 0.413379 | 0.140818
+full_final_compact | pre_pgo | native_default_integer_rays_safe | 61.7365 | 79.1789 | 0.119450 | 0.448556 | 0.140818
+full_final_compact | pre_pgo | native_samples_20000_integer_rays_safe | 66.0426 | 83.4436 | 0.092920 | 0.413379 | 0.140818
+full_final_quality | post_pgo | native_default_integer_rays_safe | 53.9544 | 74.8102 | 0.119438 | 0.485470 | 0.244637
+full_final_quality | post_pgo | native_samples_20000_integer_rays_safe | 54.9057 | 76.2823 | 0.117942 | 0.455981 | 0.244637
+full_final_quality | pre_pgo | native_default_integer_rays_safe | 53.3680 | 76.3802 | 0.117128 | 0.486411 | 0.255410
+full_final_quality | pre_pgo | native_samples_20000_integer_rays_safe | 54.2383 | 77.9189 | 0.116782 | 0.440573 | 0.255410
+full_final_quality_repeat | post_pgo | native_default_integer_rays_safe | 68.2584 | 83.5434 | 0.100632 | 0.427300 | 0.120834
+full_final_quality_repeat | post_pgo | native_samples_20000_integer_rays_safe | 70.3998 | 85.5639 | 0.096308 | 0.386275 | 0.120834
+full_final_quality_repeat | pre_pgo | native_default_integer_rays_safe | 68.4334 | 84.1758 | 0.097693 | 0.425666 | 0.118958
+full_final_quality_repeat | pre_pgo | native_samples_20000_integer_rays_safe | 70.2609 | 85.8658 | 0.095319 | 0.379128 | 0.118958
+full_so3_halfvoxel | post_pgo | native_default_integer_rays | 36.9799 | 55.8028 | 1.077083 | 0.556360 | 0.127754
+full_so3_halfvoxel | pre_pgo | native_default_integer_rays | 37.5623 | 60.1716 | 1.074539 | 0.541529 | 0.118387
+full_so3_voxel | post_pgo | native_default | 64.3674 | 82.8130 | 0.106158 | 0.410892 | 0.148215
+full_so3_voxel | post_pgo | native_default_integer_rays | 69.8886 | 85.9877 | 0.090438 | 0.398354 | 0.148215
+full_so3_voxel | post_pgo | native_samples_10000_integer_rays | 71.4860 | 87.4091 | 0.083635 | 0.380289 | 0.148215
+full_so3_voxel | post_pgo | native_samples_20000_integer_rays | 72.4060 | 88.0887 | 0.084901 | 0.357305 | 0.148215
+full_so3_voxel | pre_pgo | native_default | 65.8027 | 83.2482 | 0.102654 | 0.399726 | 0.130843
+full_so3_voxel | pre_pgo | native_default_integer_rays | 70.3279 | 86.2673 | 0.091398 | 0.390730 | 0.130843
+full_so3_voxel | pre_pgo | native_samples_20000_integer_rays | 72.4559 | 88.2241 | 0.086789 | 0.359272 | 0.130843
+full_so3_voxel_split | post_pgo | native_default_integer_rays | 55.3732 | 76.9474 | 0.117049 | 0.455233 | 0.264792
+full_so3_voxel_split | pre_pgo | native_default_integer_rays | 53.7495 | 75.4399 | 0.124241 | 0.452282 | 0.291427
+full_so3_voxel_threads16 | post_pgo | native_default_integer_rays | 67.2195 | 84.1541 | 0.098341 | 0.413162 | 0.135477
+full_so3_voxel_threads16 | pre_pgo | native_default_integer_rays | 67.6893 | 84.3599 | 0.097515 | 0.417610 | 0.157124
+full_so3_voxel_threads16_kf100 | post_pgo | native_samples_20000_integer_rays | 67.1927 | 84.1022 | 0.098229 | 0.398000 | 0.141856
+full_so3_voxel_threads16_kf100 | pre_pgo | native_samples_20000_integer_rays | 68.3877 | 84.9756 | 0.094151 | 0.386056 | 0.118597
+full_upstream_fullmode | post_pgo | native_default | 6.3821 | 13.3361 | 2.129758 | 1.867851 | 4.467928
+full_upstream_fullmode | pre_pgo | native_default | 18.2712 | 39.7117 | 0.583298 | 0.612986 | 0.165351
+
+作者口径（独立列出，不能混入上表）
+run | stage | export | F10 | F20 | Acc cm | Com cm
+full_final_compact | post_pgo | native_default_integer_rays_safe | 62.5222 | 80.5391 | 9.0363 | 15.3242
+full_final_compact | post_pgo | native_samples_20000_integer_rays_safe | 66.1336 | 83.9307 | 8.2340 | 13.9398
+full_final_compact | pre_pgo | native_default_integer_rays_safe | 62.5182 | 80.5370 | 9.0379 | 15.3239
+full_final_compact | pre_pgo | native_samples_20000_integer_rays_safe | 66.1284 | 83.9300 | 8.2351 | 13.9396
+full_final_quality | post_pgo | native_default_integer_rays_safe | 54.0747 | 75.3982 | 10.4885 | 17.3432
+full_final_quality | post_pgo | native_samples_20000_integer_rays_safe | 54.9932 | 76.8236 | 10.3426 | 16.6285
+full_final_quality | pre_pgo | native_default_integer_rays_safe | 53.4278 | 76.9547 | 10.3413 | 17.1830
+full_final_quality | pre_pgo | native_samples_20000_integer_rays_safe | 54.2668 | 78.4818 | 10.2326 | 16.4441
+full_final_quality_repeat | post_pgo | native_default_integer_rays_safe | 68.7140 | 84.5374 | 8.1082 | 13.9376
+full_final_quality_repeat | post_pgo | native_samples_20000_integer_rays_safe | 70.6633 | 86.3638 | 7.8139 | 12.9951
+full_final_quality_repeat | pre_pgo | native_default_integer_rays_safe | 68.7798 | 85.0420 | 8.0167 | 13.7862
+full_final_quality_repeat | pre_pgo | native_samples_20000_integer_rays_safe | 70.5511 | 86.6797 | 7.7839 | 12.9306
+full_so3_halfvoxel | post_pgo | native_default_integer_rays | 40.8699 | 62.2601 | 14.5289 | 21.5216
+full_so3_halfvoxel | pre_pgo | native_default_integer_rays | 41.5765 | 67.4440 | 13.9907 | 20.4658
+full_so3_voxel | post_pgo | native_default | 64.7142 | 83.6989 | 8.5823 | 13.8886
+full_so3_voxel | post_pgo | native_default_integer_rays | 70.1194 | 86.7274 | 7.6126 | 12.7586
+full_so3_voxel | post_pgo | native_samples_10000_integer_rays | 71.5711 | 87.9430 | 7.3282 | 12.2374
+full_so3_voxel | post_pgo | native_samples_20000_integer_rays | 72.5708 | 88.7477 | 7.2781 | 11.7362
+full_so3_voxel | pre_pgo | native_default | 66.1994 | 84.1416 | 8.3372 | 13.5444
+full_so3_voxel | pre_pgo | native_default_integer_rays | 70.5602 | 86.9849 | 7.7620 | 12.7339
+full_so3_voxel_split | post_pgo | native_default_integer_rays | 55.5066 | 77.5549 | 10.1029 | 16.3183
+full_so3_voxel_split | pre_pgo | native_default_integer_rays | 53.9907 | 76.1695 | 10.5541 | 16.9383
+full_so3_voxel_threads16 | post_pgo | native_default_integer_rays | 67.4727 | 84.9336 | 8.2669 | 13.7079
+full_so3_voxel_threads16 | pre_pgo | native_default_integer_rays | 68.0128 | 85.2164 | 8.1104 | 13.5959
+full_so3_voxel_threads16_kf100 | post_pgo | native_samples_20000_integer_rays | 67.4107 | 84.7644 | 8.2009 | 13.2772
+full_so3_voxel_threads16_kf100 | pre_pgo | native_samples_20000_integer_rays | 68.6345 | 85.6899 | 8.0140 | 12.9267
+full_upstream_fullmode | post_pgo | native_default | 11.0711 | 23.3178 | 22.6213 | 41.1513
+full_upstream_fullmode | pre_pgo | native_default | 20.7076 | 45.3038 | 20.5975 | 27.1383
+
+解释与限制
+主表不是仅改变一个模块的消融。异步跟踪/建图使线程数、关键帧密度、GPU/CPU负载共同决定实际Adam步数；全部实测步数已保存。
+半径0.4m的8线程Full：73个KF、9474步，约129.8步/KF；半径0.2m：544个KF、6654步，约12.2步/KF。
+高斯膨胀同时稀释每个关键帧得到的优化，因此多GS可能伴随更差重建，不能据点数判断建图能力。
+Full与Split均是原作者路径；它们改变用于GICP反馈的地图，因而位姿也会变化，不能把差异都归于离线meshing。
+最终相同源码/种子/配置的KF30两次运行，ATE约0.245/0.121m，扫描速度8.53/11.77FPS；固定种子不能固定跨进程优化时序。
+第一轮两个profile在不同GPU并行但共享CPU/IO，重复轮没有同时读取第二份bag；共享主机负载、关键帧与优化交错是混杂因素，未严格隔离其各自贡献。
+因此表格保留全部重复结果，不将最好一次作为算法稳定上限，也不把总收益逐项归因于某一个修复。
+最终KF100没有接受闭环，作者代码跳过PGO；pre/post模型和轨迹相同，独立网格导出的微小分数差异不是PGO收益。
+共同协议反方向均值没有截断，少量远处未覆盖区域可明显抬高均值；作者脚本该方向截断0.5m，正方向移除>=0.5m误差。
+主机为共享双Xeon Gold6430/128逻辑核与L40。测量未宣称整机独占；核实过实际选定GPU。
+full_so3_default原门限诊断组在约1777帧OOM，缺少最终地图，未填补质量分数。日志显示约11.12GiB已分配、27.33GiB缓存保留，另有其他进程占用。
+该组包含移除empty_cache的运行时优化；不能将其OOM说成未修改作者算法的内存上限。成功的小地图配置与极大地图缓存策略的验证范围分别报告。
+完整同步CUDA诊断只用于稳定性检查，不参与正常运行FPS对比。最终两个profile均使用16线程，关键帧周期分别为NCD的30与通用参数的100。
+周期100属于公开配置诊断；即使GS数量接近论文，也不能反推出作者论文一定使用了100。
+最终正常模式完整复测通过也不等于长期稳定性证明；本轮只验证Quad Easy，没有宣称在其他序列泛化。
+full_final_quality_repeat是相同源码、相同种子和参数的重复运行，预先登记repeat_plan.json；两次均报告，不择优替换。
+主表共同协议的5000/KF与20000/KF导出分别记录；不能把不同采样预算误写成同预算消融。
+原native tracking字段为平均1/dt；mapping字段为优化迭代/秒。两者不等于系统扫描FPS，不能拿较大数字冒充论文22.15FPS。
+1/4/16线程短探针、原生Roma与等价Rodrigues deskew、PGO噪声敏感性及失败/重试记录均附带；没有把未验证微基准收益写成端到端收益。
+依据这些已恢复的成绩，旧的低分/千万级地图不能再被视为该算法本身的质量上限，也不足以支撑S2b巨大算法优势的归因。
+论文与代码来源：https://arxiv.org/html/2607.04127v1；https://github.com/Lab-of-AI-and-Robotics/LiDAR-GS-SLAM
+复现操作见REPRODUCE_ZH.txt；修复范围见REPAIR_SCOPE_ZH.txt；所有数值对应原始日志/配置/源码和二进制哈希。

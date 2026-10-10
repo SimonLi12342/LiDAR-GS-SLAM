@@ -1,0 +1,48 @@
+{
+  "run": "full_final_quality_repeat",
+  "pre_ATE_RMSE_m": 0.11895764641087053,
+  "saved_post_ATE_RMSE_m": 0.12083446138546085,
+  "accepted_loops": 1,
+  "edges": [
+    {
+      "source_frame": 108,
+      "target_frame": 1061,
+      "translation_residual_m": 0.07496792785567562,
+      "rotation_residual_deg": 0.5176944510082483
+    }
+  ],
+  "noise_sensitivity": [
+    {
+      "loop_sigma": 1e-06,
+      "relative_loop_information": 1000000.0000000002,
+      "ATE_RMSE_m": 0.12083445992178798,
+      "median_kf_correction_m": 0.1373350542200558,
+      "max_kf_correction_m": 0.20880446814011294
+    },
+    {
+      "loop_sigma": 0.001,
+      "relative_loop_information": 1.0,
+      "ATE_RMSE_m": 0.12025533757685831,
+      "median_kf_correction_m": 0.133929499032333,
+      "max_kf_correction_m": 0.20340106630257043
+    },
+    {
+      "loop_sigma": 0.01,
+      "relative_loop_information": 0.010000000000000002,
+      "ATE_RMSE_m": 0.11523552079616992,
+      "median_kf_correction_m": 0.07869874908457195,
+      "max_kf_correction_m": 0.11652682728821462
+    },
+    {
+      "loop_sigma": 0.1,
+      "relative_loop_information": 0.0001,
+      "ATE_RMSE_m": 0.1126416917852043,
+      "median_kf_correction_m": 0.03547811447350535,
+      "max_kf_correction_m": 0.07564826491891943
+    }
+  ],
+  "native_replay_matches_saved": true,
+  "replay_max_matrix_error": 1.9061003513343167e-06,
+  "replay_mismatch_frames": [],
+  "qualification": "All frozen-map native PGO diagnostic variants are reported; not GT-selected default settings or paper reproduction. Original dense-control duplicate/bootstrap edge cases may prevent exact trajectory replay; saved-post ATE is reported separately."
+}

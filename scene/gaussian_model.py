@@ -1,3 +1,4 @@
+from utils.repair import enabled, xyzw_to_wxyz
 #
 # Copyright (C) 2023, Inria
 # GRAPHDECO research group, https://team.inria.fr/graphdeco
@@ -49,6 +50,8 @@ class GaussianModel(nn.Module):
         self.active_sh_degree = 0
         self.max_sh_degree = sh_degree  
         self._xyz = torch.empty(0)
+        self.repair_births = []
+        self.repair_prunes = []
         self._features_dc = torch.empty(0)
         self._features_rest = torch.empty(0)
         self._scaling = torch.empty(0)
@@ -105,6 +108,7 @@ class GaussianModel(nn.Module):
     def create_from_pcd2_tensor(self, points, rots_, scales_, z_vals_, trackable_idxs, control_score_=None, phys_conf_=None, keyframe_idx=0):
 
         fused_point_cloud = points
+        self.repair_births.append(dict(frame=int(keyframe_idx), points=int(len(points))))
         z_vals = torch.clamp_min(z_vals_, 1.).unsqueeze(-1).repeat(1,2)
         scales_withz = scales_[:,:2] * z_vals * 0.1
         scales_withz = torch.clamp_max(scales_withz, 0.5)
@@ -154,11 +158,12 @@ class GaussianModel(nn.Module):
 
         self.keyframe_idx = torch.ones((self.get_xyz.shape[0],1), dtype=torch.int32, device="cuda")*keyframe_idx
         
-        torch.cuda.empty_cache()
+        torch.cuda.empty_cache() if not enabled("runtime") else None
     
     def add_from_pcd2_tensor(self, points, rots_, scales_, z_vals_, trackable_idxs, control_score_=None, phys_conf_=None, keyframe_idx=0):
 
         fused_point_cloud = points
+        self.repair_births.append(dict(frame=int(keyframe_idx), points=int(len(points))))
 
         z_vals = torch.clamp_min(z_vals_, 1.).unsqueeze(-1).repeat(1,2)
         scales_withz = scales_[:,:2] * z_vals * 0.1
@@ -212,7 +217,7 @@ class GaussianModel(nn.Module):
         self.keyframe_idx = torch.concat([  self.keyframe_idx,
                                             new_keyframe_idx], dim=0)
         
-        torch.cuda.empty_cache()
+        torch.cuda.empty_cache() if not enabled("runtime") else None
         
        
     def get_trackable_gaussians_tensor_trackble(self, opacity_th, trackable_kf_idx, conf_th=0.0):
@@ -299,6 +304,8 @@ class GaussianModel(nn.Module):
         opacities = self._opacity.detach().cpu().numpy()
         scale = self._scaling.detach().cpu().numpy()
         rotation = self._rotation.detach().cpu().numpy()
+        if enabled("quaternion"):
+            rotation = xyzw_to_wxyz(rotation)  # Standard renderer/PLY boundary.
 
         dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]
 
@@ -327,10 +334,11 @@ class GaussianModel(nn.Module):
             
             from scipy.spatial.transform import Rotation as R
             
-            r = R.from_quat(filtered_rotation, scalar_first=True) 
+            r = R.from_quat(filtered_rotation, scalar_first=not enabled("quaternion"))
             rot_matrices = r.as_matrix() 
             
-            min_scale_idx = np.argmin(filtered_scaling, axis=1)
+            min_scale_idx = (np.full(len(filtered_scaling), 2, dtype=int) if enabled("quaternion")
+                             else np.argmin(filtered_scaling, axis=1))
             
             normals = np.zeros_like(filtered_xyz)
             for i in range(len(filtered_xyz)):
@@ -379,6 +387,7 @@ class GaussianModel(nn.Module):
         return optimizable_tensors
 
     def prune_points(self, mask):
+        count_before = len(self._xyz)
         valid_points_mask = ~mask
         optimizable_tensors = self._prune_optimizer(valid_points_mask)
 
@@ -404,6 +413,8 @@ class GaussianModel(nn.Module):
             self.keyframe_idx = self.keyframe_idx[valid_points_mask]
         except:
             pass
+
+        self.repair_prunes.append(dict(before=count_before, after=len(self._xyz)))
 
     def cat_tensors_to_optimizer(self, tensors_dict):
         optimizable_tensors = {}

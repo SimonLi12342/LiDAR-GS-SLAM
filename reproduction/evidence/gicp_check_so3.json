@@ -1,0 +1,68 @@
+{
+  "extension": "/mnt/d/github/catkin_ws/src/real_recon/artifacts/gs_map/lidargs_repair_20261010/fast_gicp_so3/pygicp.cpython-310-x86_64-linux-gnu.so",
+  "so3": true,
+  "planes": [
+    {
+      "plane": 0,
+      "angle_median_deg": 0.00434690079926989,
+      "angle_p95_deg": 0.009134202034353006,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 1,
+      "angle_median_deg": 0.003972839232123006,
+      "angle_p95_deg": 0.008279567393868557,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 2,
+      "angle_median_deg": 0.0040710142414165556,
+      "angle_p95_deg": 0.008560744078698801,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 3,
+      "angle_median_deg": 0.003836473846593709,
+      "angle_p95_deg": 0.008712452102067524,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 4,
+      "angle_median_deg": 0.004053548241242858,
+      "angle_p95_deg": 0.0086242053102808,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 5,
+      "angle_median_deg": 0.004015090409610691,
+      "angle_p95_deg": 0.00767370990997316,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 6,
+      "angle_median_deg": 0.0038602504692028966,
+      "angle_p95_deg": 0.007987381943620217,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 7,
+      "angle_median_deg": 0.00403505528978645,
+      "angle_p95_deg": 0.008039968857308571,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 8,
+      "angle_median_deg": 0.004057011271028387,
+      "angle_p95_deg": 0.008321878258442056,
+      "fraction_above_1deg": 0.0
+    },
+    {
+      "plane": 9,
+      "angle_median_deg": 0.0038168256189914816,
+      "angle_p95_deg": 0.008110359451631256,
+      "fraction_above_1deg": 0.0
+    }
+  ],
+  "covariance_frobenius_max": 4.162639644342358e-08,
+  "covariance_frobenius_median": 4.737964420606851e-09
+}

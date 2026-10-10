@@ -459,7 +459,11 @@ bool FastGICP<PointSource, PointTarget, SearchMethodSource, SearchMethodTarget>:
     
     //compute raw scale and quaternions using cov
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov.block<3, 3>(0, 0), Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Eigen::Quaterniond qfrommat(svd.matrixU());
+    Eigen::Matrix3d rotation_basis = svd.matrixU();
+    // A covariance eigenbasis may be a reflection. Flipping a tangent axis
+    // preserves U*diag(s)*U^T and produces an SO(3) matrix for the quaternion.
+    if (rotation_basis.determinant() < 0.0) rotation_basis.col(0) *= -1.0;
+    Eigen::Quaterniond qfrommat(rotation_basis);
     qfrommat.normalize();
 //    Eigen::Vector4d q = {qfrommat.x(), qfrommat.y(), qfrommat.z(), qfrommat.w()};
     // rotationsq.insert(rotationsq.end(), { (float)qfrommat.x(), (float)qfrommat.y(), (float)qfrommat.z(), (float)qfrommat.w()});
@@ -561,7 +565,11 @@ bool FastGICP<PointSource, PointTarget, SearchMethodSource, SearchMethodTarget>:
     
     //compute raw scale and quaternions using cov
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov.block<3, 3>(0, 0), Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Eigen::Quaterniond qfrommat(svd.matrixU());
+    Eigen::Matrix3d rotation_basis = svd.matrixU();
+    // A covariance eigenbasis may be a reflection. Flipping a tangent axis
+    // preserves U*diag(s)*U^T and produces an SO(3) matrix for the quaternion.
+    if (rotation_basis.determinant() < 0.0) rotation_basis.col(0) *= -1.0;
+    Eigen::Quaterniond qfrommat(rotation_basis);
     qfrommat.normalize();
 //    Eigen::Vector4d q = {qfrommat.x(), qfrommat.y(), qfrommat.z(), qfrommat.w()};
     // rotationsq.insert(rotationsq.end(), { (float)qfrommat.x(), (float)qfrommat.y(), (float)qfrommat.z(), (float)qfrommat.w()});
@@ -669,7 +677,11 @@ bool FastGICP<PointSource, PointTarget, SearchMethodSource, SearchMethodTarget>:
     
     //compute raw scale and quaternions using cov
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov.block<3, 3>(0, 0), Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Eigen::Quaterniond qfrommat(svd.matrixU());
+    Eigen::Matrix3d rotation_basis = svd.matrixU();
+    // A covariance eigenbasis may be a reflection. Flipping a tangent axis
+    // preserves U*diag(s)*U^T and produces an SO(3) matrix for the quaternion.
+    if (rotation_basis.determinant() < 0.0) rotation_basis.col(0) *= -1.0;
+    Eigen::Quaterniond qfrommat(rotation_basis);
     qfrommat.normalize();
 //    Eigen::Vector4d q = {qfrommat.x(), qfrommat.y(), qfrommat.z(), qfrommat.w()};
     // rotationsq.insert(rotationsq.end(), { (float)qfrommat.x(), (float)qfrommat.y(), (float)qfrommat.z(), (float)qfrommat.w()});
@@ -789,7 +801,11 @@ bool FastGICP<PointSource, PointTarget, SearchMethodSource, SearchMethodTarget>:
     
     //compute raw scale and quaternions using cov
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov.block<3, 3>(0, 0), Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Eigen::Quaterniond qfrommat(svd.matrixU());
+    Eigen::Matrix3d rotation_basis = svd.matrixU();
+    // A covariance eigenbasis may be a reflection. Flipping a tangent axis
+    // preserves U*diag(s)*U^T and produces an SO(3) matrix for the quaternion.
+    if (rotation_basis.determinant() < 0.0) rotation_basis.col(0) *= -1.0;
+    Eigen::Quaterniond qfrommat(rotation_basis);
     qfrommat.normalize();
 //    Eigen::Vector4d q = {qfrommat.x(), qfrommat.y(), qfrommat.z(), qfrommat.w()};
     // rotationsq.insert(rotationsq.end(), { (float)qfrommat.x(), (float)qfrommat.y(), (float)qfrommat.z(), (float)qfrommat.w()});

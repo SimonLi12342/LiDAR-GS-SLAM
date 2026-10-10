@@ -1,0 +1,146 @@
+LiDAR-GS-SLAM：已接受的 Quad Easy 修复比较配置
+记录日期：2026-10-10
+配置标识：quad_easy_repaired_full_kf30_v1
+
+一、采用决定及使用边界
+
+用户已同意将当前修复版 Full/KF30 配置用于后续方法比较。该配置在本地
+Quad Easy 上明显改善了高斯数量、速度和重建质量；当前最好单次运行的质量
+数值接近论文，但尚未稳定复现论文的整体性能。不要称为未经修改的官方结果、
+已确认的作者原始 NCD 配方、全数据集最优参数或保证每次得到相同分数的设置。
+
+可用于后续统一协议比较；论文中应披露本 fork、配置和修改，保留官方原版记录，
+重复实验报告全部有效运行。第二次可用于明确标注的单次结果或定性展示，不能
+只因它较好就删除第一次。不同资源条件下的异步优化有波动；复现实验存在差异
+不等于作者刻意挑选或隐瞒结果，当前没有这种证据。
+
+二、固定代码和配置
+
+官方基点：c51abf31e82a4bf628df2965702ab36177d089cd。
+与原实验 source_final 的 9 个 Python 文件、修复 FastGICP 的特征基源码、
+安全 renderer 的前向/后向 CUDA 源码逐字节一致；见 profile.json 的 SHA256。
+本发布仅新增便携启动/构建/导出入口、配置、出处和说明，不再修改上述算法文件。
+既有修复范围见 evidence/REPAIR_SCOPE_ZH.txt；完整结果见 evidence/REPORT_ZH.txt。
+
+运行参数：
+- Full：use_densify=true，use_plane_management=true。
+- overlapped_th=overlapped_th2=0.16（平方距离，半径 0.4m）。
+  官方 NCD 为 0.005；本次根据 0.4m 输入体素尺度调整，非已证实论文参数。
+- keyframe_freq=30；keyframe_th=0.6；n_trackable_keyframes=100。
+  30 是补充关键帧周期，并不排除自适应重叠触发；100 是跟踪窗口，不是全图上限。
+- downsample_voxel_size=0.4m；max_correspondence_distance=1.0m。
+- loop_constraint_noise=1e-6；loop_overlap_th=0.7；loop_cooldown_time=50s。
+- 1024×128、360°×90° 球面投影；量程 0.5–120m。
+- CPU 线程 16；随机种子 26；完整序列，LIDARGS_MAX_FRAMES=0。
+- 保留作者异步 Adam 调度、损失权重、出生、score split、plane cover/prune。
+  不强行固定每 KF Adam 次数，不加入 S2b 融合、跨帧体素去重或高斯数量上限。
+- 仅沿用作者首帧 GT 初始化；后续全为估计位姿，非 GT-odometry 实验。
+- 保存 pre/post-PGO；正式结果采用 post-PGO；关闭可视化和 GPU 轮询。
+
+修复开关（启动器自动设置，不应漏项）：
+gicp_so3,gradients,quaternion,birth_orientation,normals,bootstrap,confidence,
+spherical,integer_rays,runtime,pgo_batch,pgo_interpolation,raster_safety
+
+概要：协方差反射基转 SO(3)、四元数顺序/朝向、法向传递/坐标系、球面可见性、
+整数像素射线、CUDA 后向导数、零足迹分箱、首帧消费与闭环登记、最终队列消费、
+PGO 批量变换/轨迹校正插值、移除循环 empty_cache。实现修复会改变输出，必须披露。
+SO(3) 修正在原生 C++ 中编译生效；仅设置 gicp_so3 字符串不能修复旧安装的二进制。
+
+三、已测结果（不是未来运行承诺）
+
+本地输入 1991 帧；评估固定 1988 header-GT 配对、独立 Leica 5cm 参考和固定 ROI。
+统一协议采用轨迹 SE3 对齐，无尺度拟合或 mesh ICP；50万面积样本；双向距离不截断。
+F10/F20 分别是 10/20cm。PGO 后，5000 样本/KF：
+
+同配置第一次：323401 GS，8.5302 scan FPS，F10 53.9544%，F20 74.8102%，ATE 0.244637m。
+同配置第二次：347266 GS，11.7740 scan FPS，F10 68.2584%，F20 83.5434%，ATE 0.120834m。
+
+两次 F20 范围 74.81–83.54%，算术均值 79.18%；仅两次，不是稳定总体估计。
+第二次 72KF、5974 Adam 步，扫描 169.101s，整条命令 192.201s。
+第一次 71KF、7721 Adam 步；不同资源竞争/调度是可能原因，未完成因果分解。
+固定 seed 不保证异步执行相同，更多实际优化步也不保证该次质量更高。
+
+第二次同一冻结地图的导出/评分对照：
+5000样本/KF，统一协议：F10 68.2584%，F20 83.5434%。
+20000样本/KF，统一协议：F10 70.3998%，F20 85.5639%。
+5000样本/KF，作者评分约定：F10 68.7140%，F20 84.5374%。
+20000样本/KF，作者评分约定：F10 70.6633%，F20 86.3638%。
+作者评分约定采用2cm体素、0.5m离群规则，但这里仍用共同冻结 ROI、共同对齐/参考；
+不等于完整论文协议。5000与20000、统一与作者评分不可混写或混排。
+
+论文 Full：F20 86.776%，129885 GS；Quad系统22.15 FPS；约0.08m ATE。
+当前最佳单次高预算导出分数接近论文，地图仍约2.67倍，扫描速度约53%。
+论文 Ryzen9 7900X/RTX4090；本机 Xeon Gold6430/共享L40，非独占、非相同计时条件。
+当前 scan FPS 是帧数/扫描墙钟，包含读盘，不含离线网格化。
+tracking_avg_fps 是逐帧耗时倒数均值，mapping_avg_fps 是优化迭代/s；不得冒充系统FPS。
+论文：https://arxiv.org/html/2607.04127v1
+官方：https://github.com/Lab-of-AI-and-Robotics/LiDAR-GS-SLAM
+
+四、安装和运行（新克隆也适用）
+
+使用独立 Python3.10 环境，先按仓库官方 Installation 安装系统/通用依赖。
+reproduction/environment_observed.txt 保存本机成功环境的包版本，属于环境清单，
+不是跨机器 pip 锁文件。PyTorch/CUDA版本应配套；下面所有 python 必须来自同一环境。
+激活环境后确认 cmake --version；本次成功环境为3.31.8，系统3.16在本机不能正确
+识别Python Development.Module。原生修复构建使用PyTorch2.5.1+cu121/CUDA12.1。
+
+  python -m pip install -r requirements.txt
+  bash install_submodules.sh
+
+之后构建本 profile 的独立原生扩展。它不会替换环境中已安装的扩展；构建日志、
+源码和二进制哈希在 build/repaired_native。已有目录会拒绝覆盖，失败也保留日志。
+CUDA_HOME 指向含 bin/nvcc 的实际 toolkit。L40/4090 架构为8.9，其他卡显式修改：
+
+  python tools/build_repaired_native.py --cuda-home /path/to/cuda --arch 8.9 --jobs 2
+
+可执行安装自检（真实GICP协方差/法向、零足迹CUDA边界及上游数值测试）：
+
+  python tools/check_repaired.py --gpu GPU-your-device-uuid --output build/checks/native.json
+
+必须通过下面入口选择已验证源码、私有原生库和全部修复开关。原先直接运行
+gs_icp_slam.py/configs/ncd.yaml 不会自动选择这个 profile。
+
+  python tools/run_repaired.py \
+    --dataset /path/to/ncd_quad_easy \
+    --trajectory /path/to/ncd_quad_easy/gt-nc-quad-easy.csv \
+    --output /path/to/new_results/quad_repeat_01 \
+    --gpu GPU-your-device-uuid
+
+dataset目录包含ROS bag；topic为/os_cloud_node/points。trajectory为TUM格式，
+扩展名可为.csv；保留原始时间戳和Base→LiDAR外参[.001,0,.091,0,0,0,1]。
+--dry-run只检查配置/源码，不执行SLAM。--frames 40仅供安装冒烟，自动标为smoke_only；
+正式比较不得传正数帧上限。结果目录存在即拒绝覆盖。
+
+不要并行运行两个SLAM/mesh任务争抢同一GPU；记录整机CPU/IO负载。后续正式比较
+宜固定资源并保留全部重复。启动器保存配置、源码哈希、Git状态、原生来源和计时，
+但不声称不同硬件/负载下能位级复现历史第二次结果。
+
+五、网格导出和公平比较
+
+  python tools/mesh_repaired.py --run /path/to/new_results/quad_repeat_01 \
+    --output /path/to/new_meshes/quad_5000.ply --samples 5000 --gpu GPU-your-device-uuid
+
+高质量导出：同一命令改用新文件名及 --samples 20000。必须明确记录采样预算；
+20000不改变建图/SLAM FPS，新增离线导出时间单独报告。默认5000与已引用结果对应。
+使用同一安全renderer、整数像素反投影和原生Poisson（depth10、opacity0.5、
+depth dist0.1、density quantile0.01）；没有按GT裁去误差较大的重建部分。
+
+与S2b/其他方法比较时，固定输入范围、参考、坐标对齐、ROI、F阈值及距离定义。
+不同方法可以沿用各自适合的网格化方式，但说明预算和收敛检查。作者论文分数
+作为单独引用值，不与本地统一协议直接拼成不加说明的排名。
+本仓库自带作者eval_recon/crop_recon入口。共同Leica ROI及原bag不随源码发布，
+本次提交不重新构造或更改GT。历史统一/作者评分、失败和排除记录见evidence。
+
+六、版本管理
+
+本配置从原官方c51提交继承并提交到用户fork；保留所有上游历史，不强推。
+profile.json校验12个实际改动的算法/原生源码，防止未来误用变动后的源码。
+新算法改动或科学参数调整应建立新profile，旧结果不可自动沿用。
+今后从fork运行推荐入口即可使用这套已接受设置；它是当前已测的质量优先配置，
+而非已证明在所有场景、所有资源条件下最优的设置。
+
+发布验证（2026-10-10）：12个修复文件与实测版逐字节一致；4668个其余实现文件
+不变。独立FastGICP/renderer重新构建、真实L40原生几何/零足迹/上游数值检查通过。
+新启动器完成40真实帧、有限pre/post位姿、pre/post模型和5000样本/KF的Poisson网格
+导出；冻结模型导出前后哈希一致；已有结果拒绝覆盖。该短运行仅验证发布入口，
+不作为新的完整序列质量/FPS结果。记录见evidence/release_validation。

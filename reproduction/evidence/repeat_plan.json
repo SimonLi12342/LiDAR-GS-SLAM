@@ -1,0 +1,8 @@
+{
+  "reason": "Same-seed asynchronous SLAM quality varies across scheduling/configuration tests. Repeat final KF30 profile once with identical algorithm/configuration to quantify variation.",
+  "primary": "full_final_quality",
+  "repeat": "full_final_quality_repeat",
+  "retain_both": true,
+  "no_GT_tuning": true,
+  "select_best_for_headline": false
+}
